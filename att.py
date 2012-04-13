@@ -11,47 +11,32 @@
 
 from datetime import datetime
 from time import time
-import json, MySQLdb, MySQLdb.cursors
-	# from MySQLdb import _mysql
-
-# from:  http://mysql-python.sourceforge.net/MySQLdb.html#mysqldb
-# can use named params as:
-# (user="deweyg",host="127.0.0.1",port=3306,passwd="moonpie",db="thangs")
-
-# db exceptions listed here:  http://www.tutorialspoint.com/python/python_database_access.htm
-# evn_event_notification is a CLIENT only table  (its only on server as a template for client); no data there
+import json
 
 # app.config.pyfile(app.root_path+'/papi_settings.cfg', silent=False)
 # read vals with app.config['UC_VAL_NAME'] -- app.config['DEBUG']
 
 import logging
 import logging.handlers
+from db import connect, call, sqlExec, sqlFetchAll, sqlFetchRow, sqlFetchValue
+conn, cur = connect();
 
-def dbConnect(db={}):
-	try:  # prod / deploy db user is:  cc_app  w pw=88cc_app77
-		# dbhost = app.config['DBHOST']
-		# dbuser = app.config['DBUSER']
-		# dbpw = app.config['DBPW']
-		# dbname = app.config['DBNAME']
+# test = call('spTest', (33,))
+# # print(test)
+# for resultSet in test:
+# 	for row in resultSet:
+# 		print(row)
 		
-		conn = MySQLdb.connect(host='localhost', user='deweyg', passwd='zebra10', db='att', conv={FIELD_TYPE.LONG: int}, init_command='set autocommit=1;')
-		# copy conn at bottom of file
-		# conn.cursor() returns rows as tuples
-		# conn.cursor(MySQLdb.cursors.DictCursor)
-		cur = conn.cursor(MySQLdb.cursors.DictCursor) # returns rows as dictionaries
-			# cur.execute('set autocommit=1;')
-			# cur.callproc('cmn.init_session',(0,))
-			# cur.nextset()
-	except MySQLdb.Error, e:
-		print "Error %d: %s" % (e.args[0], e.args[1])
-		exit (e)
-	
-	db.conn = conn
-	db.cur = cur
-	return db
 
-global db = dbConnect()
-
+# -- drop table _att_stage;
+# CREATE TEMPORARY TABLE IF NOT EXISTS _att_stage LIKE _tpl_att_stage;
+# 
+# TRUNCATE TABLE _att_stage;
+# INSERT INTO _att_stage
+# 	(ats_dom_name, ats_att_name, ats_value, ats_keep_old) VALUES
+# 	('ats_dom_name', 'ats_att_name', 'ats_value', 0);
+# 	
+# SELECT * FROM _att_stage;
 	
 # an "entity_type" is basically a table in another schema
 # a "domain" is a grouping of attributes  (user_prefs_ui_agent, user_prefs_ui_sup, user_prefs_security, )
@@ -65,84 +50,113 @@ global db = dbConnect()
 
 # expectedDomains = ['company', 'companyPref', 'role', 'user', 'userPref']
 # atts = [{}, {}, {}, {}, {}]
-
-	def call(procName, paramsAsSequence):
-		db.cur.callproc('att.'+ procName, paramsAsSequence)
-		allSets = []
-		count = 0
-		results = db.cur.fetchall()
-		while results:
-			allSets[count] = results
-			db.cur.nextset()
-			results = db.cur.fetchall()
-			count += 1
-		return allSets
-		
-	def sqlExec(query):
-		return db.cur.execute(query)
-
-	def sqlFetchAll(query):
-		sqlExec(query)
-		return db.cur.fetchall()
-			
-	def sqlFetchRow(query):
-		sqlExec(query)
-		return db.cur.fetchone() # returns None when no more rows to fetch
 	
-	def sqlFetchValue(query):
-		return sqlFetchRow(query)[0].values()[0]
-		
-	def validate(val_type, val_name):
-		'''make sure that name is a valid rec in type'''
-		return True
+def validate(val_type, val_name):
+	'''make sure that name is a valid rec in type'''
+	return True
+
+def isValidEntityType(entity_type):
+	return sqlFetchValue("Select ety_id from ety_entity_type where ety_name = '{0}';".format(entity_type))
+
+def isValidDomain(domain):
+	return sqlFetchValue("Select dom_id from dom_domain where dom_name = '{0}';".format(domain))
+
+def loadEntity(instance, xxx_id):
+	# instance._data = sqlFetch(instance.type_id, id)
+	results = call('loadEntity', (instance['type'], xxx_id, instance['company_id'], 0))
+	results = results[0][0]
+	print(results)
 	
-	def isValidEntityType(entity_type):
-		return sqlFetchValue("Select ety_id from ety_entity_type where ety_name = '{0}';".format(entity_type))
+	instance['_entity'] = results #call('loadEntity', (instance.type, id, instance.company_id, 0))
+	instance['_id'] = results['ent_id']
+	if instance['_id'] is None or instance['_id'] <= 0:
+		raise ValueError
+	return instance
+	
+def loadAllAtts(instance, att_names='all'): # , *argsAsSequ
+	entVals = instance._entity
+	attList = call('loadAllAtts', (entVals.ent_id, entVals.ent_ety_id, entVals.ent_com_id, '', 0))[0]
+	for t in attList:
+		instance['__dict__'][t.att_name] = t
 
-	def isValidDomain(domain):
-		return sqlFetchValue("Select dom_id from dom_domain where dom_name = '{0}';".format(domain))
+def insertVals(key, valsTbl, domain, keepOld):
+	'''returns 4 values for the insert stmt
+	values in t take PRECEDENCE over values in P1 & P3 '''
+	return (valsTbl.domain or domain or ''), (key or valsTbl.att), (valsTbl.value or ''), (valsTbl.keepOld or keepOld)
 
-	def loadEntity(instance, id):
-		instance._data = sqlFetch(instance.type_id, id)
-		instance.id = instance._data.ent_xxx_id
-		if instance.id is None or instance.id <= 0:
-			raise ValueError
-		return instance
+query_insert_atts = '''INSERT INTO _att_stage (ats_dom_name, ats_att_name, ats_value, ats_keep_old) VALUES ({0});'''
 
-class Entity:
+class Entity(dict): # make it a new style class with base of dictionary
 	'''returns an entity obj for which you can get & set attributes
 	
 	user = Entity('user', company_id=3, id=45)
 	user.domains()  #prints list of domains for which "user" attributes exists
-			eg:  preferences, privileges, ui_colors, etc
+			# eg:  preferences, privileges, ui_colors, etc
 	user.atts('' or 'preferences') #prints list of atts in named domains (or all if dom param empty)
-			eg: auto_signout_interval, 
-	user.setAtts('preferences', {auto_signout_interval: 3600}, keepVersion=True)
+			# eg: auto_signout_interval, 
+	user.setAtts('preferences', {auto_signout_interval: {val: 3600, timestamp: 39349}}, keepOld=True)
 	user.getAtts('preferences', [auto_signout_interval, display_handle])  #empty list returns all
 	
 	max att size = 16 mb
 	'''
 	allInstances = {} # list of created instances; class var
 	
-	def __init__(self, entity_type, company_id, id=0):
+	def __init__(self, entity_type, company_id, xxx_id):
+		'''P3 (id) is the ID in some external table;  not ent_entity.ent_id which is internal'''
+		global allInstances
+		dict.__init__(self) # call built in method
 		# type_id = isValidEntityType(entity_type)
 		# if type_id is None or type_id < 1:
 		# 	raise Error
-		# self.type_id = type_id
-		self.type = entity_type
-		self.company_id = company_id
-		loadEntity(self, id) # stores other cols on self/instance._data
+		# self.['type_id'] = type_id
+		self['type'] = entity_type
+		self['company_id'] = company_id
+		# self['_entity'] = {} # place to store the ent_entity rec
+		loadEntity(self, xxx_id) # stores other cols on self/instance._data
 		allInstances.setdefault(self, True) # keep track of created instances for destruction in cleanUp() below
 
+	def __call__(): # makes instance callable
+		pass
+		
+	def __getattr__(self, key): # called when an attribute lookup fails
+		# loadAllAtts(self) # must put them in the same place a normal dict would put them
+		if key not in self['__dict__']:
+			print(key)
+			print(self['__dict__'])
+			raise KeyError
+		return 'boo' # self.get(key) # return loaded value or None
+	
+	# def get(self, key, *args):
+	# 	if not args:
+	# 		args = ('not provided--DG?',)
+	# 
+	# 	return dict.get(self, key, *args)		
+
+	def merge(self, other, keep2ndVal):
+		for key in other:
+			if key not in self or keep2ndVal:
+				self[key] = other[key]
+	
 	def domains():
-		''''''
+		'''returns list of att domains for this obj type'''
 		
 		
 	def atts(domain = ''):
-		''''''
+		'''returns list of atts in the named domain (or all)'''
 		
-	def setAtts(self, domain, att_dict, keepVersion=True):
-	
+		
+	def setAtts(self, domain, att_dict, keepOld=False):
+		#  str below looks like:  "'{domain}', '{attribute}', '{value}', {keepOld}"
+		# insertVals returns a 4 values
+		valuesList = ["'{0}', '{1}', '{2}', {3}".format(insertVals(k, t, domain, keepOld)) for k, t in att_dict.items()]
+		print(valuesList)
+		insert_vals = '), ('.join(valuesList)
+		print(insert_vals)
+		insert_vals = query_insert_atts.format(insert_vals)
+		print(insert_vals)
+		sqlExec(insert_vals)
+		call('storeAtts', (self.id, self.company_id, len(valuesList), 1, 1, 1, 0))
+		
 	def getAtts(self, domain, att_dict = {}): # empty dict means all
 		"""retrieve atts for an entity
 		
@@ -152,43 +166,49 @@ class Entity:
 			empty dict (P2) means all atts for the specified domains
 		"""
 	def clearAtts(self):
+		pass
 		
 	def getHistory(self):
+		pass
 		
 	@classmethod
 	def cleanUp(cls):
 		# for k, v in allInstances:
-		
+		pass
+
+
 class Admin:
 	
-def addDomain(name='companyPref', atts=None, company=0):  # classes and their atts are system global unless company passed in
+	def addDomain(name='companyPref', atts=None, company=0):
+		# classes and their atts are system global unless company passed in
+		pass
 	
 	
-def addAttsToDomain(name='companyPref', atts=None, company=0):
+	def addAttsToDomain(name='companyPref', atts=None, company=0):
+		pass
 	
+	def addObject(domain='companyPref', objID=None, objName='', atts=None, company=0):
+		pass
 	
-def addObject(domain='companyPref', objID=None, objName='', atts=None, company=0):
-	
-	
-def setObjectAtts (domain='', objID=None, atts=None, company=0): #addAttsToObject
+	def setObjectAtts (domain='', objID=None, atts=None, company=0): #addAttsToObject
+		pass
 
+	def getObjectAtts(domain='', objID=None, atts=None, company=0):
+		pass
+	
+	def listObjects(domain='companyPref', company=0, atts=None):
+		pass
+	
 
-def getObjectAtts(domain='', objID=None, atts=None, company=0):
-	
-	
-def listObjects(domain='companyPref', company=0, atts=None):
-	
-	
-
-@app.route('/')
-@app.route('/status/')
+# @app.route('/')
+# @app.route('/status/')
 def hello_world():
 	#return "Hello Terra {0} ".format('girl')
 	# sqlExec("select 1, 2, 3, DATE_FORMAT(Now(),'%Y-%m-%d %H:%i:%s') AS DtAdded;")
 	# resp = db.cur.fetchone()
 	return jsonify({'results': 'Minggl API confirmed!','status':'ok'})
 
-@app.route('/error/') # to test throwing an err & getting msg
+# @app.route('/error/') # to test throwing an err & getting msg
 def testErrorEmail():
 	try:
 		1/0
@@ -196,7 +216,7 @@ def testErrorEmail():
 		app.logger.exception('you should get this email')
 		return jsonify({'results': 'email sent','status':'error'})
 
-@app.route('/hello/<name>')
+# @app.route('/hello/<name>')
 def hello(name=None):
 	# no such template
 	return render_template('hello.html', name=name, pic='/static/Icon.jpg')
@@ -213,7 +233,7 @@ def requestDataAsDict():
 		data = {'err' : 'nothing found in "data" for get or post'}
 	return data # or 'data must have been None'
 		
-@app.route('/ws/user/create/', methods=['POST'])
+# @app.route('/ws/user/create/', methods=['POST'])
 def user_create():
 	data = requestDataAsDict()
 	# print(data)
@@ -234,7 +254,7 @@ def user_create():
 	# print(use_id)
 	return jsonify({'use_id': use_id['use_id'], 'use_uuid': data['use_uuid']})
 
-@app.route('/ws/user/update/', methods=['POST'])
+# @app.route('/ws/user/update/', methods=['POST'])
 def user_update():
 	data = requestDataAsDict()
 	# calc a unique handle
@@ -259,7 +279,7 @@ def user_update():
 	sqlExec(query)
 # /ws/user/update/	
 
-@app.route('/ws/user/lookup/', methods=['POST'])
+# @app.route('/ws/user/lookup/', methods=['POST'])
 def user_lookup():
 	'''takes method and value and finds user details'''
 	data = requestDataAsDict()
@@ -275,7 +295,7 @@ def user_lookup():
 # /ws/user/lookup/
 	
 
-@app.route('/ws/user/ic/getUpdates/', methods=['POST'])
+# @app.route('/ws/user/ic/getUpdates/', methods=['POST'])
 def list_recentFlockSharedEvents():
 	# load all event recs that girls in my flock have shared w server
 	# since my last sync
@@ -312,7 +332,7 @@ def list_recentFlockSharedEvents():
 	return jsonify({'results': results})
 # /ws/user/ic/getUpdates/
 
-@app.route('/ws/user/ic/getResponses/', methods=['POST'])
+# @app.route('/ws/user/ic/getResponses/', methods=['POST'])
 def getResponses_from_innercircle():
 	# niu;  data returned in getUpdates above
 	data = requestDataAsDict()
@@ -325,10 +345,11 @@ def getResponses_from_innercircle():
 	return jsonify({'results': results})
 # /ws/user/ic/getResponses/	
 
-db=MySQLdb.connect(host='localhost', user='deweyg', passwd='zebra10', db='gro', conv={ FIELD_TYPE.LONG: int })
+# testConn = connect()
+	# host='localhost', user='deweyg', passwd='zebra10', db='att', conv={ FIELD_TYPE.LONG: int }
 	# attempt initial connection to confirm db available at server start
-if __name__ == '__main__':
+# if __name__ == '__main__':
 	# host = app.config['HOST']
 	# port = app.config['PORT']
 	# debug = app.config['DEBUG']
-	app.run(host="ec2-107-21-98-73.compute-1.amazonaws.com", port=5000, debug=True) # app.run()
+	# app.run(host="ec2-107-21-98-73.compute-1.amazonaws.com", port=5000, debug=True) # app.run()
