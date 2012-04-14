@@ -21,31 +21,27 @@ def connect():
 		# dbuser = app.config['DBUSER']
 		# dbpw = app.config['DBPW']
 		# dbname = app.config['DBNAME']
-		
-		conn = MySQLdb.connect(host='localhost', user='deweyg', passwd='zebra10', db='att'
-			, conv={FIELD_TYPE.LONG: int, FIELD_TYPE.TINY: int}, cursorclass=MySQLdb.cursors.DictCursor
-			, init_command='set autocommit=1;  CREATE TEMPORARY TABLE IF NOT EXISTS _att_stage LIKE _tpl_att_stage;')
-		# copy conn at bottom of file
-		# conn.cursor() returns rows as tuples
-		# conn.cursor(MySQLdb.cursors.DictCursor)
-		# dictCursor = conn.cursor(MySQLdb.cursors.DictCursor) # returns rows as dictionaries
 
-			# cur.execute('set autocommit=1;')
-			# cur.callproc('cmn.init_session',(0,))
-			# cur.nextset()
+		conn = MySQLdb.connect(host='localhost', user='deweyg', passwd='zebra10', db='att'
+			# , conv={FIELD_TYPE.LONG: int, FIELD_TYPE.TINY: int} # defaults are better here
+			, cursorclass=MySQLdb.cursors.DictCursor
+			, init_command='CREATE TEMPORARY TABLE IF NOT EXISTS _att_stage LIKE _tpl_att_stage;')
+		# copy conn at bottom of file
+		# conn.cursor() # returns rows as tuples
+		# conn.cursor(MySQLdb.cursors.DictCursor) # returns rows as dictionaries
+
+		cur = conn.cursor(MySQLdb.cursors.DictCursor)
+		cur.execute('set autocommit=1;')
+		# cur.callproc('init_session',(0,))
+		cur.nextset() # get rid of any lingering results
 	except MySQLdb.Error, e:
 		print "Error %d: %s" % (e.args[0], e.args[1])
 		exit (e)
 		
 	db["conn"] = conn
-	cur = conn.cursor(MySQLdb.cursors.DictCursor)
 	db["cur"] = cur
-
-	# print('dictCursor')
-	# print(db["cur"])
-	
-	# db["cur"].callproc('spTest', (1,))
-	return conn, cur #db["cur"]
+	# cur.callproc('spTest', (1,))
+	return conn, cur
 	
 def call(procName, paramsAsSequence):
 	global cur
@@ -75,4 +71,4 @@ def sqlFetchRow(query):
 	return cur.fetchone() # returns None when no more rows to fetch
 
 def sqlFetchValue(query):
-	return sqlFetchRow(query)[0].values()[0]
+	return sqlFetchRow(query).values()[0]

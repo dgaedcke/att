@@ -1,10 +1,6 @@
 # to run this server
 #  python ~/Sites/att/att.py
-# to update EC2 w latest script, go to ~/Sites/att & run:
 
-
-# to see errors; ssh to the site and then run
-# cat /tmp/server.log
 # to restart api:  ./startserver.sh
 # to config DB:  sudo nano /etc/mysql/my.cnf  to restart:  sudo service mysql restart
 # to restart DB see:  http://www.cyberciti.biz/faq/install-mysql-server-5-on-ubuntu-linux/
@@ -63,21 +59,38 @@ def isValidDomain(domain):
 
 def loadEntity(instance, xxx_id):
 	# instance._data = sqlFetch(instance.type_id, id)
-	results = call('loadEntity', (instance['type'], xxx_id, instance['company_id'], 0))
-	results = results[0][0]
-	print(results)
-	
+	results = call('att.loadEntity', (instance['type'], xxx_id, instance['company_id'], 0))
+	results = results[0][0] #1st row of 1st tuple
+
 	instance['_entity'] = results #call('loadEntity', (instance.type, id, instance.company_id, 0))
+	instance['_all_atts_loaded'] = False
+	print(instance['_entity'])
 	instance['_id'] = results['ent_id']
 	if instance['_id'] is None or instance['_id'] <= 0:
 		raise ValueError
 	return instance
-	
+
 def loadAllAtts(instance, att_names='all'): # , *argsAsSequ
-	entVals = instance._entity
-	attList = call('loadAllAtts', (entVals.ent_id, entVals.ent_ety_id, entVals.ent_com_id, '', 0))[0]
+	entVals = instance['_entity']
+	attList = call('loadAllAtts', (entVals['ent_id'], entVals['ent_ety_id'], entVals['ent_com_id'], '', 0))
+	if attList:
+		attList = attList[0]
+	else:
+		print('no att vals found')
+		attList = tuple()
+	instance['_atts_count'] = len(attList)
+	instance['_all_atts_loaded'] = True
+	instance['atts'] = {}
 	for t in attList:
-		instance['__dict__'][t.att_name] = t
+		instance['atts'][t.att_name] = t
+		
+	
+	def func(a):
+		print('nested func ' + a)
+		pass
+		
+	func('was called')
+	return func
 
 def insertVals(key, valsTbl, domain, keepOld):
 	'''returns 4 values for the insert stmt
@@ -99,38 +112,42 @@ class Entity(dict): # make it a new style class with base of dictionary
 	
 	max att size = 16 mb
 	'''
-	allInstances = {} # list of created instances; class var
+	# allInstances = {} # list of created instances; class var
 	
 	def __init__(self, entity_type, company_id, xxx_id):
 		'''P3 (id) is the ID in some external table;  not ent_entity.ent_id which is internal'''
-		global allInstances
+
 		dict.__init__(self) # call built in method
 		# type_id = isValidEntityType(entity_type)
 		# if type_id is None or type_id < 1:
 		# 	raise Error
 		# self.['type_id'] = type_id
-		self['type'] = entity_type
+		self['type'] = entity_type #['type']
 		self['company_id'] = company_id
+		# self['atts'] = {} #dict of actual atts retrieved
 		# self['_entity'] = {} # place to store the ent_entity rec
 		loadEntity(self, xxx_id) # stores other cols on self/instance._data
-		allInstances.setdefault(self, True) # keep track of created instances for destruction in cleanUp() below
-
+		# Entity.allInstances.setdefault(id(self), self) # keep track of created instances for destruction in cleanUp() below
+		
 	def __call__(): # makes instance callable
 		pass
 		
 	def __getattr__(self, key): # called when an attribute lookup fails
-		# loadAllAtts(self) # must put them in the same place a normal dict would put them
-		if key not in self['__dict__']:
-			print(key)
-			print(self['__dict__'])
-			raise KeyError
-		return 'boo' # self.get(key) # return loaded value or None
+		if not self['_all_atts_loaded']:
+			loadAllAtts(self) # must put them in the same place a normal dict would put them
+		if key not in self['atts']:
+			print('attribute "' + key + '" does not exist for this obj')
+		return self['atts'].get(key) # return loaded value or None
 	
 	# def get(self, key, *args):
 	# 	if not args:
 	# 		args = ('not provided--DG?',)
 	# 
 	# 	return dict.get(self, key, *args)		
+
+	def __setattr__(self, name, value):
+		# dict.__setattr__(self, name, value)
+		self['atts'][name] = value
 
 	def merge(self, other, keep2ndVal):
 		for key in other:
@@ -176,6 +193,9 @@ class Entity(dict): # make it a new style class with base of dictionary
 		# for k, v in allInstances:
 		pass
 
+x = Entity('user', 33, 66)
+# x = sqlFetchValue('SHOW CREATE TABLE _att_stage;')
+# print(x.someVal)
 
 class Admin:
 	
