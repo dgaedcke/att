@@ -85,17 +85,18 @@ def loadAllAtts(instance, att_names='all'): # , *argsAsSequ
 		instance['atts'][t.att_name] = t
 	return len(attList)
 
-def insertVals(key, valsTbl, domain, keepOld):
-	'''returns 4 values for the insert stmt
-	values in t take PRECEDENCE over values in P1 & P3 '''
+def insertVals(att_name, valsTbl, domain, keepOld):
+	'''returns 8 val tuple for the insert stmt in query_insert_atts below
+	values in valsTbl take PRECEDENCE over values in P1 & P3
+	but NOT P4 (keepOld)...it is global for all rows'''
 	# print('key=' + key)
 	# print('vals:')
 	# print(valsTbl)
-	# theTuple = ((valsTbl.get('domain') or domain or ''), (key or valsTbl.get('att')), (valsTbl.get('value') or ''), (valsTbl.get('keepOld') or keepOld))
-	# print((valsTbl.get('domain') or domain or ''), (key or valsTbl.get('att')), (valsTbl.get('value') or ''), (valsTbl.get('keepOld') or keepOld))
-	return (valsTbl.get('domain') or domain or ''), (key or valsTbl.get('att')), (valsTbl.get('value') or ''), (valsTbl.get('keepOld') or keepOld)
+	return (valsTbl.get('domain') or domain or ''), (att_name or valsTbl.get('att')), (valsTbl.get('value') or ''), (keepOld or valsTbl.get('keepOld')), 0, 0, 0, 0
 
-query_insert_atts = '''INSERT INTO _att_stage (ats_dom_name, ats_att_name, ats_value, ats_keep_old) VALUES ({0});'''
+# query_insert_atts is static string for passing vals
+# into sproc storeAtts via setAtts below
+query_insert_atts = '''INSERT INTO _att_stage (ats_dom_name, ats_att_name, ats_value, ats_keep_old, ats_is_long, ats_is_multi, ats_hash_it, ats_vers_dttm) VALUES ({0});'''
 
 class Entity(dict): # make it a new style class with base of dictionary
 	'''returns an entity obj for which you can get & set attributes
@@ -151,8 +152,8 @@ class Entity(dict): # make it a new style class with base of dictionary
 
 	def merge(self, other, keep2ndVal):
 		for key in other:
-			if key not in self or keep2ndVal:
-				self[key] = other[key]
+			if key not in self['atts'] or keep2ndVal:
+				self['atts'][key] = other[key]
 	
 	def domains(self, entity_type):
 		'''returns list of attribute domains for this entity_type'''
@@ -166,42 +167,37 @@ class Entity(dict): # make it a new style class with base of dictionary
 		return sqlFetchAll(query)
 		
 		
-	def atts(domain = ''):
+	def atts(self, domain = ''):
 		'''returns list of atts in the named domain (or all)'''
 		
 		
 	def setAtts(self, domain, att_dict, keepOld=False):
-		#  str below looks like:  "'{domain}', '{attribute}', '{value}', {keepOld}"
-		# insertVals returns a 4 values
-		valuesList = ["'{0[0]}', '{0[1]}', '{0[2]}', {0[3]}".format(insertVals(k, t, domain, keepOld)) for k, t in att_dict.items()]
-		# print(valuesList)
-		insert_vals = '), ('.join(valuesList)
-		# print(insert_vals)
+		#  str below simulates:  "'{domain}', '{attribute}', '{value}', {keepOld}"...
+		# which is based on query_insert_atts
+		# insertVals() returns a tuple of 8 values
+		# this is a list comprehension
+		valuesList = ["'{0[0]}', '{0[1]}', '{0[2]}', {0[3]}, {0[4]}, {0[5]}, {0[6]}, '{0[7]}'".format(insertVals(k, t, domain, keepOld)) for k, t in att_dict.items()]
+		insert_vals = '), ('.join(valuesList) # make vals str from list
 		insert_vals = query_insert_atts.format(insert_vals)
-		# print(insert_vals)
-		sqlExec(insert_vals)
+		print('------')
+		print(insert_vals)
+		print('------')
+		sqlExec(insert_vals) # insert into temp table
 
+		testMode = 0 # set to 16 if you want the sproc to return test results
+		# setting to 32 could potentially delete ALL your data
+		results = call('storeAtts', (self['id'], self['company_id'], len(valuesList), 1, 1, 1, testMode))
 		#  begin test code
-		# call('createMissingVals', (0,))
-		# query = '''UPDATE _att_stage S
-		# 	STRAIGHT_JOIN dom_domain D ON D.dom_name = S.ats_dom_name
-		# 	JOIN att_attribute A ON A.att_name = S.ats_att_name
-		# 	LEFT OUTER JOIN dxa_domain_x_attribute X ON X.dxa_dom_id = D.dom_id AND X.dxa_att_id = A.att_id
-		# 	SET S.ats_dom_name = D.dom_id, S.ats_att_name = A.att_id, S.ats_is_long = LENGTH(S.ats_value) > 140
-		# 	, S.ats_is_multi = COALESCE(X.dxa_att_is_multi,0);'''
-		# sqlExec(query) # update w fkeys for testing only
-		# results = sqlFetchAll('Select ats_att_name, ats_dom_name, ats_value from _att_stage;')
-		# # print(results)
-		# for row in results:
-		# 	print('space')
-		# 	print('space')
-		# 	for col in row:
-		# 		print(col + ' = ' + str(row.get(col) or 'none'))
-		#  end test code
-
-		return call('storeAtts', (self['id'], self['company_id'], len(valuesList), 1, 1, 1, 0))
+		if testMode = 16:
+			for row in results:
+				for col in row:
+					print(col + ' = ' + str(row.get(col) or 'none'))
+			print('')
+			print('Next Set:')
+		# end test code
+		return results
 		
-	def getAtts(self, domain, att_dict = {}): # empty dict means all
+	def getAtts(self, domain, att_list = []): # empty list means all
 		"""retrieve atts for an entity
 		
 		getAtts(domain, att_dict = {dob=True,facebookHandle=True})
@@ -209,14 +205,29 @@ class Entity(dict): # make it a new style class with base of dictionary
 			empty or "all" in domain (P1) means: get atts for all domains
 			empty dict (P2) means all atts for the specified domains
 		"""
-	def clearAtts(self):
+		att_names = ''
+		if att_list:
+			param2_type = type(att_list)
+			if param2_type == type(list()) or param2_type == type(tuple()):
+				sp_param_type = 'list'
+				att_names == ','.join(att_list)
+
+			# elif param2_type == type(dict()):
+			# 	sp_param_type = 'dict'
+			# 	att_names == ','.join(att_list)
+		
+		# call loadAtts(p_ent_id, p_ent_ety_id, p_ent_com_id, p_att_list, p_att_count, p_encode);
+		results = call('loadAtts', (self['id'], self['company_id'], domain, att_names, 1, 1, 0))
+		
+		return results
+
+
+	def clearAtts(self, domain, att_list):
 		pass
 		
-	def getHistory(self):
+	def getHistory(self, domain, attribute):
 		pass
 	
-	def showResults(self):
-		return 
 		
 	# @classmethod
 	# def cleanUp(cls):
@@ -226,7 +237,7 @@ class Entity(dict): # make it a new style class with base of dictionary
 
 # from att import Entity
 # x = Entity('user', 33, 66)
-# res = x.setAtts('attribute', {'name': {'value': 'bob', 'att': 'name', 'domain': 'attribute', 'keepOld': False}, 'age': {'value': 11}, 'hometown':{'value': 'boston', 'keepOld': True}, 'notes': {'value': 'baker ****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************bye dewey*******'}}, True)
+# res = x.setAtts('attribute', {'name': {'value': 'bob', 'att': 'name', 'domain': 'attribute', 'keepOld': False}, 'age': {'value': 11}, 'hometown':{'value': 'boston', 'keepOld': True}, 'notes': {'value': 'baker ****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************bye dewey*******'}}, 1)
 # print('1)  sproc results are:')
 # print(res[0])
 

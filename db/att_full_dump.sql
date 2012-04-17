@@ -48,26 +48,41 @@ CREATE TABLE `_tpl_att_stage` (
 
 /*Data for the table `_tpl_att_stage` */
 
+/*Table structure for table `_tpl_ttLabelValue` */
+
+DROP TABLE IF EXISTS `_tpl_ttLabelValue`;
+
+CREATE TABLE `_tpl_ttLabelValue` (
+  `ttlabel` char(30) DEFAULT NULL,
+  `ttvalue` char(255) NOT NULL DEFAULT '',
+  `ttTagID` int(10) unsigned NOT NULL DEFAULT '0',
+  `ttIsLongVal` tinyint(1) NOT NULL DEFAULT '0',
+  `ttEncode` tinyint(3) unsigned NOT NULL DEFAULT '0'
+) ENGINE=MEMORY DEFAULT CHARSET=utf8;
+
+/*Data for the table `_tpl_ttLabelValue` */
+
 /*Table structure for table `att_attribute` */
 
 DROP TABLE IF EXISTS `att_attribute`;
 
 CREATE TABLE `att_attribute` (
   `att_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `att_dty_id` tinyint(3) unsigned NOT NULL DEFAULT '1' COMMENT 'fkey to dty_data_type; 1 = string, 2 = text, 3 = int, 4 = num, 5 = dttm',
   `att_in_all_dom` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT 'include this att in all domains (via dxa)',
   `att_keep_old` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT 'keep old vals and version each change',
   `att_hash_it` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT 'encrypt stored vals',
   `att_is_long` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT 'true if > 140 chars',
   `att_encode` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT 'xtra bits',
   `att_name` varchar(40) NOT NULL COMMENT 'attribute name',
-  PRIMARY KEY (`att_id`),
+  PRIMARY KEY (`att_id`,`att_dty_id`),
   UNIQUE KEY `att_name` (`att_name`),
   KEY `att_in_every_domain` (`att_in_all_dom`)
 ) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8;
 
 /*Data for the table `att_attribute` */
 
-insert  into `att_attribute`(`att_id`,`att_in_all_dom`,`att_keep_old`,`att_hash_it`,`att_is_long`,`att_encode`,`att_name`) values (1,0,0,0,0,0,'age'),(2,0,0,0,0,0,'name'),(20,0,0,0,0,0,'hometown'),(23,0,0,0,0,0,'notes');
+insert  into `att_attribute`(`att_id`,`att_dty_id`,`att_in_all_dom`,`att_keep_old`,`att_hash_it`,`att_is_long`,`att_encode`,`att_name`) values (1,3,0,0,0,0,0,'age'),(2,1,0,0,0,0,0,'name'),(20,1,0,0,0,0,0,'hometown'),(23,2,0,0,0,0,0,'notes');
 
 /*Table structure for table `dom_domain` */
 
@@ -96,9 +111,11 @@ CREATE TABLE `dty_data_type` (
   `dty_name` varchar(40) NOT NULL COMMENT 'string, text, int, bool, date, blob',
   PRIMARY KEY (`dty_id`),
   UNIQUE KEY `dty_name` (`dty_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8;
 
 /*Data for the table `dty_data_type` */
+
+insert  into `dty_data_type`(`dty_id`,`dty_encode`,`dty_name`) values (1,0,'string'),(2,0,'text'),(3,0,'int'),(4,0,'num'),(5,0,'dttm'),(6,0,'blob');
 
 /*Table structure for table `dxa_dom_x_att` */
 
@@ -107,7 +124,7 @@ DROP TABLE IF EXISTS `dxa_dom_x_att`;
 CREATE TABLE `dxa_dom_x_att` (
   `dxa_dom_id` int(10) unsigned NOT NULL COMMENT 'domain (group) for this use of the att',
   `dxa_att_id` int(10) unsigned NOT NULL COMMENT 'attribute id',
-  `dxa_dty_id` int(10) unsigned NOT NULL COMMENT 'data type of value stored for this att',
+  `dxa_dty_id` int(10) unsigned NOT NULL DEFAULT '1' COMMENT 'data type of value stored for this att',
   `dxa_att_is_long` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT '1 if val > 140 chars',
   `dxa_att_is_multi` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT '1 if > 1 val stored for this att',
   `dxa_att_hash_it` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT '1 if val should be hashed',
@@ -140,6 +157,23 @@ CREATE TABLE `ent_entity` (
 /*Data for the table `ent_entity` */
 
 insert  into `ent_entity`(`ent_id`,`ent_com_id`,`ent_ety_id`,`ent_xxx_id`,`ent_mod_dttm`,`ent_encode`) values (13,14,4,12,'2012-04-13 14:43:03',0),(15,33,4,66,'2012-04-13 14:54:49',0),(16,0,4,66,'2012-04-13 16:34:42',0);
+
+/*Table structure for table `erl_error_log` */
+
+DROP TABLE IF EXISTS `erl_error_log`;
+
+CREATE TABLE `erl_error_log` (
+  `erl_Error_Code` int(10) unsigned NOT NULL,
+  `erl_Calling_Proc` varchar(30) NOT NULL,
+  `erl_Note` varchar(300) NOT NULL DEFAULT '',
+  `erl_ReferenceNum` char(30) NOT NULL COMMENT 'could be connection ID or the user ID who caused errro',
+  `erl_Dt_Add` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `erl_CID` smallint(5) unsigned NOT NULL DEFAULT '0',
+  `erl_Version` char(10) NOT NULL DEFAULT '',
+  PRIMARY KEY (`erl_Dt_Add`,`erl_Error_Code`,`erl_CID`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+/*Data for the table `erl_error_log` */
 
 /*Table structure for table `ety_entity_type` */
 
@@ -183,7 +217,16 @@ CREATE TABLE `lva_long_value` (
 
 /*Data for the table `lva_long_value` */
 
-insert  into `lva_long_value`(`lva_val_id`,`lva_value`) values (1,'baker ****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************bye dewey*******');
+/*Table structure for table `memT100` */
+
+DROP TABLE IF EXISTS `memT100`;
+
+CREATE TABLE `memT100` (
+  `id` int(10) unsigned NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=MEMORY DEFAULT CHARSET=latin1 COMMENT='holds 100 rows in memory for pivots & such';
+
+/*Data for the table `memT100` */
 
 /*Table structure for table `val_value` */
 
@@ -196,16 +239,14 @@ CREATE TABLE `val_value` (
   `val_att_id` mediumint(10) unsigned NOT NULL DEFAULT '0' COMMENT 'attribute',
   `val_version` smallint(5) unsigned NOT NULL DEFAULT '1' COMMENT 'value version',
   `val_encode` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT 'xtra bits',
-  `val_mod_dttm` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `val_mod_dttm` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
   `val_value` varchar(140) NOT NULL COMMENT 'value stored',
   PRIMARY KEY (`val_id`),
   UNIQUE KEY `ent_id_dom_id_att_id_value` (`val_ent_id`,`val_dom_id`,`val_att_id`),
   KEY `value_att_type` (`val_value`(30),`val_att_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*Data for the table `val_value` */
-
-insert  into `val_value`(`val_id`,`val_ent_id`,`val_dom_id`,`val_att_id`,`val_version`,`val_encode`,`val_mod_dttm`,`val_value`) values (1,15,1,23,1,0,'2012-04-16 19:56:41','-1'),(2,15,1,20,1,0,'2012-04-16 19:56:41','boston'),(3,15,1,1,1,0,'2012-04-16 19:56:41','11'),(4,15,1,2,1,0,'2012-04-16 19:56:41','bob');
 
 /*Table structure for table `var_value_archive` */
 
@@ -215,15 +256,46 @@ CREATE TABLE `var_value_archive` (
   `var_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `var_val_id` bigint(20) unsigned NOT NULL COMMENT 'value id',
   `var_encode` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT 'xtra bits',
-  `var_mod_dttm` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `var_mod_dttm` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `var_value` mediumblob NOT NULL COMMENT 'value',
   PRIMARY KEY (`var_id`),
   UNIQUE KEY `var_id_mod_dttm` (`var_val_id`,`var_mod_dttm`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*Data for the table `var_value_archive` */
 
-insert  into `var_value_archive`(`var_id`,`var_val_id`,`var_encode`,`var_mod_dttm`,`var_value`) values (1,1,0,'2012-04-16 19:58:05','alpha ****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************bye dewey*******'),(2,2,0,'2012-04-16 19:58:05','albany'),(3,3,0,'2012-04-16 19:58:05','10'),(4,4,0,'2012-04-16 19:58:05','adam');
+/* Function  structure for function  `fwwq` */
+
+/*!50003 DROP FUNCTION IF EXISTS `fwwq` */;
+DELIMITER $$
+
+/*!50003 CREATE DEFINER=`deweyg`@`localhost` FUNCTION `fwwq`(pString Varchar(440), pEncode Tinyint) RETURNS varchar(450) CHARSET latin1
+    NO SQL
+    COMMENT 'wraps str in ""'
+BEGIN
+/*	Select fwwq('str',0);
+	if 1&pEncode=1 then replace parens with {}
+*/
+	Set pString = If(1&pEncode,Replace(Replace(pString,'(','{'),')','}'),pString);
+	Return Concat('"',pString,'"');
+END */$$
+DELIMITER ;
+
+/* Function  structure for function  `f_User_ShashPW` */
+
+/*!50003 DROP FUNCTION IF EXISTS `f_User_ShashPW` */;
+DELIMITER $$
+
+/*!50003 CREATE DEFINER=`deweyg`@`localhost` FUNCTION `f_User_ShashPW`(pUserSalt Char(2), pPWLiteralString Varchar(32)
+	, pEncode Tinyint) RETURNS char(40) CHARSET latin1
+    READS SQL DATA
+    DETERMINISTIC
+BEGIN
+/*	Select f_User_ShashPW(USE_PW_Salt,'pw_string_literal',0) as HashedPW_as_Stored;
+*/
+	Return SHA1(concat(pUserSalt,pPWLiteralString));
+END */$$
+DELIMITER ;
 
 /* Function  structure for function  `hashIt` */
 
@@ -305,20 +377,63 @@ DELIMITER $$
     MODIFIES SQL DATA
     COMMENT 'loads atts for specified entity'
 BEGIN
-	/*	call loadAllAtts();
+	/*	call loadAllAtts(p_ent_id, p_ent_ety_id, p_ent_com_id, p_domain_list, p_encode);
 	*/
 	if exists(SELECT 1 FROM att.ent_entity WHERE ent_id = p_ent_id AND ent_com_id = p_ent_com_id AND ent_ety_id = p_ent_ety_id) then
-		SELECT straight_join
-			V.val_id, D.dxa_dom_name as dom_name, A.att_name, A.att_id
-			, coalesce(L.lva_value, V.val_value) as val_value
-			, V.val_version, V.val_mod_dttm, V.val_encode
+		SELECT STRAIGHT_JOIN
+			V.val_id, M.dom_name, A.att_name
+			, COALESCE(L.lva_value, V.val_value) AS val_value
+			, V.val_mod_dttm, V.val_encode
+			-- , A.att_id, M.dom_id, V.val_version
 			-- , dxa_dom_id, dxa_att_id, dxa_dty_id, dxa_att_is_long, dxa_att_is_mult, dxa_att_to_hash, dxa_att_to_version, dxa_encode, dxa_hash_salt
 		FROM val_value V
 		JOIN att_attribute A ON A.att_id = V.val_att_id
-		join dxa_domain_x_attribute D On D.dxa_att_id = V.val_att_id and D.dxa_dom_id = V.val_dom_id
+		JOIN dom_domain M ON M.dom_id = V.val_dom_id
+		LEFT OUTER JOIN dxa_dom_x_att D ON D.dxa_att_id = V.val_att_id AND D.dxa_dom_id = V.val_dom_id
 		LEFT OUTER JOIN lva_long_value L
-			ON left(V.val_value,2) = '-1' and L.lva_val_id = V.val_id
+			ON LEFT(V.val_value,2) = '-1' AND L.lva_val_id = V.val_id
 		WHERE V.val_ent_id = p_ent_id; -- or V.val_dom_id in (1);
+	end if;
+END */$$
+DELIMITER ;
+
+/* Procedure structure for procedure `loadAtts` */
+
+/*!50003 DROP PROCEDURE IF EXISTS  `loadAtts` */;
+
+DELIMITER $$
+
+/*!50003 CREATE DEFINER=`deweyg`@`%` PROCEDURE `loadAtts`(in p_ent_id bigint, In p_ent_ety_id int, IN p_ent_com_id INT
+	, In p_att_list varchar(400), In p_att_count smallint, In p_encode tinyint)
+    READS SQL DATA
+    COMMENT 'loads specified atts by domain'
+BEGIN
+	/*	call loadAtts(p_ent_id, p_ent_ety_id, p_ent_com_id, p_att_list, p_att_count, p_encode);
+format for p_att_list is crucial!!  field_delim = : and row_delim = ,
+so vals should come in looking like:  domain_name:attribute_name(comma)dom2:att2
+		for example:
+			preference:name,attribute:age,attribute:handle....etc
+	*/
+	declare v_fld_delim, v_row_delim char(1) default ':';
+	set v_row_delim = ',';
+	
+	if exists(SELECT 1 FROM att.ent_entity WHERE ent_id = p_ent_id AND ent_com_id = p_ent_com_id AND ent_ety_id = p_ent_ety_id) then
+	-- if clause handles security making sure that only authorized calls can read the atts
+		SELECT STRAIGHT_JOIN S.dom_name, S.att_name, V.val_value, Y.dty_name, V.val_mod_dttm, V.val_id
+		FROM (SELECT A.att_id, D.dom_id, T.att_name, T.dom_name, COALESCE(X.dxa_dty_id, A.att_dty_id) AS dty_id
+				FROM (
+					SELECT SQL_NO_CACHE SUBSTRING_INDEX(SUBSTRING_INDEX(p_att_list,v_fld_delim,m.id),v_row_delim,-1) AS dom_name
+						, SUBSTRING_INDEX(SUBSTRING_INDEX(p_att_list,v_row_delim,m.id),v_fld_delim,-1) AS att_name
+					FROM memT100 m WHERE m.id <= p_att_count
+					)
+				AS T
+			JOIN att_attribute A ON A.att_name = T.att_name
+			JOIN dom_domain D ON D.dom_name = T.dom_name
+			LEFT OUTER JOIN dxa_dom_x_att X ON X.dxa_att_id = A.att_id AND X.dxa_dom_id = D.dom_id
+			)
+		AS S
+		JOIN val_value V ON V.val_ent_id = p_ent_id AND V.val_att_id = S.att_id AND V.val_dom_id = S.dom_id
+		JOIN dty_data_type Y ON Y.dty_id = S.dty_id;
 	end if;
 END */$$
 DELIMITER ;
@@ -377,9 +492,10 @@ BEGIN
 	http://dev.mysql.com/doc/refman/5.5/en/signal.html
 	To signal a generic SQLSTATE value, use '45000', which means “unhandled user-defined exception.” 
 */
-	declare MESSAGE_TEXT varchar(200);
+	-- declare MESSAGE_TEXT varchar(200);
 	-- SIGNAL SQLSTATE '45000';
-	SET MESSAGE_TEXT = p_err_msg;
+	-- SET MESSAGE_TEXT = p_err_msg;
+	call up_Signal_Error(p_sql_state,p_err_msg,'_proc?','','');
 END */$$
 DELIMITER ;
 
@@ -412,11 +528,23 @@ DELIMITER $$
     COMMENT 'store all passed atts'
 BEGIN
 /* call storeAtts(p_ent_id, p_com_id, p_row_count, 0,0,0, p_encode);
+	pass 16 into p_encode to get some test data back
+	pass 32 to DELETE ALL persistent storage and start over;  for testing only
+	code for 32 is commented out by default and should be left that way
 */
-	DECLARE v_inst_updt_count MEDIUMINT DEFAULT 0;
+	DECLARE v_inst_updt_count, v_test_mode MEDIUMINT DEFAULT 0;
 	declare exit handler for 1146 begin call raiseError(1146,'priv sess table _att_stage missing',0); End;
+	DECLARE EXIT HANDLER FOR 45000 BEGIN END; -- my custom err handler
+	
 	-- *************  test code:  create missing dom & att vals so update join below works
-	-- call zadm_createMissingVals(0);
+	if 32&p_encode = 32 then -- SERIOUS DANGER; DELETES ALL data from storage;
+		SET v_test_mode = v_test_mode;
+		-- CALL zadm_truncTables(0); -- SERIOUS DANGER; DELETES ALL data from storage;
+	end if;
+	set v_test_mode = 16&p_encode = 16;
+	if v_test_mode then -- will create missing attribute or domain names
+		call zadm_createMissingVals(0);
+	end if;
 	-- ************* end test code
 	
 	-- lookup fkey vals only once & update an un-contended table
@@ -436,9 +564,11 @@ BEGIN
 		call raiseError(45000, 'att_name or dom_name passed does not exist in the db', 0);
 	end if;
 	
-	-- Select ats_att_name, ats_dom_name, ats_value from _att_stage; -- test code only
+	IF v_test_mode THEN -- show table before inserts/ updates are run for testing
+		Select ats_att_name, ats_dom_name, ats_value from _att_stage; -- test code only
+	end if;
 	-- archive old values if specified and if value has changed
-	INSERT ignore INTO att.var_value_archive -- ignore for date time conflicts
+	INSERT ignore INTO var_value_archive -- ignore for date time conflicts
 		(var_val_id, var_value, var_encode)
 		SELECT straight_join V.val_id, coalesce(L.lva_value, V.val_value), V.val_encode
 		FROM _att_stage S
@@ -450,17 +580,14 @@ BEGIN
 			and (L.lva_val_id IS NULL and V.val_value <> S.ats_value
 				or L.lva_val_id is not null and L.lva_value <> S.ats_value);
 	INSERT INTO val_value
-	(val_ent_id, val_dom_id, val_att_id, val_mod_dttm, val_value)
-		SELECT p_ent_id, S.ats_dom_name, S.ats_att_name, now()
+			(val_ent_id, val_dom_id, val_att_id, val_value)
+		SELECT p_ent_id, S.ats_dom_name, S.ats_att_name
 		, if(S.ats_is_long, -1, if(S.ats_hash_it, hashIt(S.ats_value, 'AB'), S.ats_value)) as val_value
-			-- , ats_keep_old
+			-- , S.ats_keep_old
 		FROM _att_stage S
-		-- Join	dom_domain D On D.dom_name = S.ats_dom_name
-		-- join att_attribute A on A.att_name = S.ats_att_name
-		-- where length(ats_value) < 141
-		On duplicate key update val_value = values(val_value); -- val_mod_dttm set automatically
+		On duplicate key update val_value = values(val_value); -- val_mod_dttm set automatically ONLY if value is new
 	
-	Set v_inst_updt_count = row_count(); -- not accurate due to "ON DUPLICATE KEY UPDATE" returning 2
+	Set v_inst_updt_count = row_count(); -- not accurate due to "ON DUPLICATE KEY UPDATE" returning 2; could be > than p_row_count
 	
 	-- now store long vals
 	INSERT INTO lva_long_value
@@ -475,12 +602,137 @@ BEGIN
 	-- don't count recs in lva_long_value because the val_value = -1 rec in val_value was already counted
 	-- SET v_inst_updt_count = v_inst_updt_count + ROW_COUNT();
 	
-	if false and v_inst_updt_count <> p_row_count then -- not accurate due to "ON DUPLICATE KEY UPDATE" returning 2
+	if v_inst_updt_count < p_row_count then -- must b >=;  ROW_COUNT not accurate due to "ON DUPLICATE KEY UPDATE" returning 2
 		CALL raiseError(45000, concat('recs passed =',p_row_count,';  recs updated=',v_inst_updt_count,';  they should match'), 0);
 	end if;
 	
-	truncate table _att_stage; -- clear for next call
-	Select v_inst_updt_count as rowcount;
+	truncate table _att_stage; -- clear vals for next call
+	
+	-- not accurate due to "ON DUPLICATE KEY UPDATE" returning 2; lowest value is accurate
+	Select least(p_row_count, v_inst_updt_count) as rowcount;
+END */$$
+DELIMITER ;
+
+/* Procedure structure for procedure `up_SessInit_Connect` */
+
+/*!50003 DROP PROCEDURE IF EXISTS  `up_SessInit_Connect` */;
+
+DELIMITER $$
+
+/*!50003 CREATE DEFINER=`deweyg`@`localhost` PROCEDURE `up_SessInit_Connect`(In pCond Int)
+    READS SQL DATA
+    COMMENT 'this proc runs once for every user session that connects'
+Init:BEGIN
+If Left(User(),5) not in ('mas01','dewey','mad01') then
+/*	bail out for "repl" and "nagios" users
+	SUPER accounts do not call init-connect so this code does not run for dewey */
+	Leave Init;
+End if;
+/*	this proc need only run for Minggl application connections
+	all active session @vars should be documented and intialized here 
+	turn on Auto Committ mode for InnoDB in case server defaul fails  
+call up_SessInit_Connect(1);
+*/
+-- SET SESSION AUTOCOMMIT = 1;
+Set SQL_LOG_BIN = 0, SQL_NOTES = 0;
+/*	dont log any common or temp table stuff to the bin log; it should not replicate
+	Set session wait_timeout = 7200;  also turn off logging of notes for the app session
+	mysql will disconnect idle sessions after 2 hrs; app is set to validate every 6k secs
+	Site specific
+	@Sites_UserAttachable = current list of end user attachable sites
+	@Sites_SupportMstream = sites that we currently scrape for newsfeed
+*/
+/*
+	the following memory table is a global array used for all sorts of processing
+	be VERY CAREFUL before making any changes to ttLabelValue
+If common.uf_Table_DoesExist('ttLabelValue','common',0) then
+End if;
+*/
+CREATE TEMPORARY TABLE IF NOT EXISTS ttLabelValue LIKE _tpl_ttLabelValue;
+/*	
+	perf test code below		slight perf loss  do not use this until 5.1 */
+/*	Prepare parseArray from "INSERT INTO common.ttLabelValue
+         (ttlabel,ttvalue)
+         select SQL_NO_CACHE SUBSTRING_INDEX(SUBSTRING_INDEX(?,':',m.id),'/',-1)
+                , SUBSTRING_INDEX(SUBSTRING_INDEX(?,'/',m.id),':',-1)
+         from memT100 m where m.id <= ?;"; */
+-- Execute parseArray Using @pMapKeys, @pMapKeys, @vValueCount;
+If not Exists(Select 1 from memT100 where id = 500) then
+	Call zdm_memT100_Init(5000,0);
+End if;
+SET storage_engine=DEFAULT; -- I dont think this is necessary as no new tables should be created by this session
+Set SQL_LOG_BIN = 1;
+END */$$
+DELIMITER ;
+
+/* Procedure structure for procedure `up_Signal_Error` */
+
+/*!50003 DROP PROCEDURE IF EXISTS  `up_Signal_Error` */;
+
+DELIMITER $$
+
+/*!50003 CREATE DEFINER=`deweyg`@`localhost` PROCEDURE `up_Signal_Error`(In pErrCode Int, In pErrMsg VarChar(350), In pCallingProc Char(20)
+, In pExtr2 Char(10), In pExtr3 Char(10))
+    READS SQL DATA
+    COMMENT 'throws error back to calling app'
+BEGIN
+Set SQL_LOG_BIN = 1;
+/*	all loggin and cleanup is done BEFORE this proc is called in mstats.p_SP_Err_LogOrSignal()
+	call up_Signal_Error(10,'pivot tbl memT100 not inited at server boot','p_MSFL_Add_inBulk','','LOG');
+	table names cannot be longer than 64 but err 1103 (incorrect table name) can show more text */
+Set pErrMsg = If(pErrMsg='','no_msg?',pErrMsg);
+Set pErrMsg = Left(Concat_WS('_',pErrMsg,pErrCode,pCallingProc),64);
+	Set pErrMsg = Replace(Replace(pErrMsg,' ','_'),'-','_'); -- spaces & hyphens cause a syntax error
+	Set pErrMsg = Replace(pErrMsg,'__','_');
+	Set pErrMsg = Replace(pErrMsg,'__','_');
+	Set @equery = Concat('Update Error.',pErrMsg,' Set Col=1 Where Col=2 And Col=3');
+	Prepare sig_err from @equery;
+	Execute sig_err;
+	Deallocate Prepare sig_err;
+END */$$
+DELIMITER ;
+
+/* Procedure structure for procedure `up_SplitStr` */
+
+/*!50003 DROP PROCEDURE IF EXISTS  `up_SplitStr` */;
+
+DELIMITER $$
+
+/*!50003 CREATE DEFINER=`deweyg`@`localhost` PROCEDURE `up_SplitStr`(IN pMapKeys Varchar(1600),
+       IN fldDelim CHAR(2), IN rowDelim CHAR(2), OUT pNumKeysInserted INTEGER, IN pAppendList Boolean)
+    READS SQL DATA
+    COMMENT 'Splits a supplied string using using the given fldDelim & rowDel'
+BEGIN
+/*	Call up_SplitStr('1:one/2:two/3:three/',':','/',@a,0);
+	Important---this routine is 110% performance optimization--there are 1000 rows in t100 */
+Declare  vValueCount int default 0;
+/* handler should only necessary until we've fully validated that init_connect
+always creates ttLabelValue for each session as they connect */
+Declare Continue Handler for 1146
+	Begin
+		call up_Sess_LogError(1146,'up_SplitStr','ttLabelValue doesnt exist',1,'');
+		Set SQL_LOG_BIN = 1;
+	End;
+Set SQL_LOG_BIN = 0;
+If not(pAppendList) then
+   Truncate TABLE ttLabelValue;  /* if fails, it's supposed to call Handler 1146 above---being inside IF puts that at risk */
+End if;      /* right now, there is no scenario where it gets called FIRST time with pAppendList = 1 */
+Set vValueCount = length(pMapKeys) - length(replace(pMapKeys,rowDelim,'')) ;  /* must come before TRIM or count off by 1 */
+Set pMapKeys = Trim(Trailing rowDelim from pMapKeys);
+/* Set cur_label = ELT(abs(cur_label)>0+1,ELT(pNumKeysInserted + 1,cur_label,f_AttLabelGetID(cur_label)),cur_label) ; 
+f_AttLabelGetID  */
+         INSERT INTO ttLabelValue
+         (ttlabel,ttvalue)
+         select SQL_NO_CACHE SUBSTRING_INDEX(SUBSTRING_INDEX(pMapKeys,fldDelim,m.id),rowDelim,-1)
+                , SUBSTRING_INDEX(SUBSTRING_INDEX(pMapKeys,rowDelim,m.id),fldDelim,-1)
+         from minggl.memT100 m where m.id <= vValueCount;
+If pAppendList = 0 then
+   SET pNumKeysInserted = row_count(); /* Return # of rows just added to the table */
+Else
+    Select SQL_NO_CACHE count(*) into pNumKeysInserted from ttLabelValue ;
+End if ;
+Set SQL_LOG_BIN = 1; /*	this cmd is messing up the Row_Count() function it seems
+		Select ttlabel, ttValue from ttLabelValue;    */
 END */$$
 DELIMITER ;
 
@@ -523,6 +775,52 @@ BEGIN
 	truncate table val_value;
 	TRUNCATE TABLE lva_long_value;
 	TRUNCATE TABLE var_value_archive;
+END */$$
+DELIMITER ;
+
+/* Procedure structure for procedure `zdm_memT100_Init` */
+
+/*!50003 DROP PROCEDURE IF EXISTS  `zdm_memT100_Init` */;
+
+DELIMITER $$
+
+/*!50003 CREATE DEFINER=`deweyg`@`localhost` PROCEDURE `zdm_memT100_Init`(In pTotRowsMemT100 Int, In pNoRecursion Bool)
+    MODIFIES SQL DATA
+    COMMENT 'inits pivot Table'
+BEGIN
+/*	call zdm_memT100_Init(pTotRowsMemT100,pNoRecursion);
+*/
+Declare vMaxExisting, vErrCount, vInsertCount Int Default 0;
+Declare Continue Handler for 1022, 1024, 1026
+	Begin
+		Set vErrCount = vErrCount + 1;
+		insert into erl_error_log 
+			(erl_Error_Code, erl_Calling_Proc, erl_Note, erl_ReferenceNum, erl_CID, erl_Version) values
+			(vErrCount, 'zdm_memT100_Init', 'init of memT100 failing', vErrCount, Connection_ID(), 0);
+		If vErrCount > 5 and not(pNoRecursion) then -- only try this once
+			Truncate memT100;
+			call zdm_memT100_Init(pTotRowsMemT100,1);
+		End if;
+	End;
+If pTotRowsMemT100 < 10000 then
+	Set pTotRowsMemT100 = 25000;
+End if;
+Select Coalesce(Max(id),0) into vMaxExisting from minggl.memT100 where id between 1 and pTotRowsMemT100;
+If vMaxExisting < pTotRowsMemT100 then
+	Set @a = 0;
+	Insert ignore into minggl.memT100 (id) 
+	Select A.id
+	from (
+		select @a:=@a+1 as id from common.v10000, common.v10 limit 100000 /* view w 100k rows */
+		) as A
+	Where A.id <= pTotRowsMemT100;
+	Set vInsertCount = Row_Count();
+-- check for errors
+	If (Select Count(*) from memT100) < pTotRowsMemT100 and not(pNoRecursion) then -- or vInsertCount <> @a
+		Set vErrCount = 6;
+		Insert into memT100 (id) values (1); -- force throwing dup key error
+	End if;
+End if;
 END */$$
 DELIMITER ;
 
