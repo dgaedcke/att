@@ -42,28 +42,31 @@ def connect():
 	db["cur"] = cur
 	# cur.callproc('spTest', (1,))
 	return conn, cur
-	
+
+def fetchAll(): # returns results from last query or sp call
+	return cur.fetchall()
+		
 def call(procName, paramsAsSequence):
 	global cur
 	cur.callproc(procName, paramsAsSequence)  # 'att.'+ procName
 	allSets = list()
-	results = cur.fetchall()
+	results = fetchAll()
 	# print('abv results')
 	# print(results)
 	while results:
 		allSets.append(results)
 		cur.nextset()
-		results = cur.fetchall()
+		results = fetchAll()
 	return allSets
 
 def sqlExec(query):
 	global cur
 	return cur.execute(query)
-
+	
 def sqlFetchAll(query):
 	global cur
 	sqlExec(query)
-	return cur.fetchall()
+	return fetchAll()
 
 def sqlFetchRow(query):
 	global cur

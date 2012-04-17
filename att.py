@@ -64,9 +64,9 @@ def loadEntity(instance, xxx_id):
 
 	instance['_entity'] = results #call('loadEntity', (instance.type, id, instance.company_id, 0))
 	instance['_all_atts_loaded'] = False
-	print(instance['_entity'])
-	instance['_id'] = results['ent_id']
-	if instance['_id'] is None or instance['_id'] <= 0:
+	# print(instance['_entity'])
+	instance['id'] = results['ent_id']
+	if instance['id'] is None or instance['id'] <= 0:
 		raise ValueError
 	return instance
 
@@ -83,19 +83,17 @@ def loadAllAtts(instance, att_names='all'): # , *argsAsSequ
 	instance['atts'] = {}
 	for t in attList:
 		instance['atts'][t.att_name] = t
-		
-	
-	def func(a):
-		print('nested func ' + a)
-		pass
-		
-	func('was called')
-	return func
+	return len(attList)
 
 def insertVals(key, valsTbl, domain, keepOld):
 	'''returns 4 values for the insert stmt
 	values in t take PRECEDENCE over values in P1 & P3 '''
-	return (valsTbl.domain or domain or ''), (key or valsTbl.att), (valsTbl.value or ''), (valsTbl.keepOld or keepOld)
+	# print('key=' + key)
+	# print('vals:')
+	# print(valsTbl)
+	# theTuple = ((valsTbl.get('domain') or domain or ''), (key or valsTbl.get('att')), (valsTbl.get('value') or ''), (valsTbl.get('keepOld') or keepOld))
+	# print((valsTbl.get('domain') or domain or ''), (key or valsTbl.get('att')), (valsTbl.get('value') or ''), (valsTbl.get('keepOld') or keepOld))
+	return (valsTbl.get('domain') or domain or ''), (key or valsTbl.get('att')), (valsTbl.get('value') or ''), (valsTbl.get('keepOld') or keepOld)
 
 query_insert_atts = '''INSERT INTO _att_stage (ats_dom_name, ats_att_name, ats_value, ats_keep_old) VALUES ({0});'''
 
@@ -129,8 +127,10 @@ class Entity(dict): # make it a new style class with base of dictionary
 		loadEntity(self, xxx_id) # stores other cols on self/instance._data
 		# Entity.allInstances.setdefault(id(self), self) # keep track of created instances for destruction in cleanUp() below
 		
-	def __call__(): # makes instance callable
-		pass
+	def __call__(self, domain): # makes instance callable
+		# returns all atts within the named domain
+		return getAtts(self, domain or 'all')
+		# pass
 		
 	def __getattr__(self, key): # called when an attribute lookup fails
 		if not self['_all_atts_loaded']:
@@ -154,8 +154,16 @@ class Entity(dict): # make it a new style class with base of dictionary
 			if key not in self or keep2ndVal:
 				self[key] = other[key]
 	
-	def domains():
-		'''returns list of att domains for this obj type'''
+	def domains(self, entity_type):
+		'''returns list of attribute domains for this entity_type'''
+		entity_type = entity_type or 'case' # default if no param
+		query = '''SELECT STRAIGHT_JOIN D.dom_name
+		FROM ety_entity_type T
+		JOIN exd_ety_x_domain E ON E.exd_ety_id = T.ety_id
+		JOIN dom_domain D ON D.dom_id = E.exd_dom_id
+		WHERE ety_name = '{0}';'''.format(entity_type)
+		
+		return sqlFetchAll(query)
 		
 		
 	def atts(domain = ''):
@@ -165,14 +173,33 @@ class Entity(dict): # make it a new style class with base of dictionary
 	def setAtts(self, domain, att_dict, keepOld=False):
 		#  str below looks like:  "'{domain}', '{attribute}', '{value}', {keepOld}"
 		# insertVals returns a 4 values
-		valuesList = ["'{0}', '{1}', '{2}', {3}".format(insertVals(k, t, domain, keepOld)) for k, t in att_dict.items()]
-		print(valuesList)
+		valuesList = ["'{0[0]}', '{0[1]}', '{0[2]}', {0[3]}".format(insertVals(k, t, domain, keepOld)) for k, t in att_dict.items()]
+		# print(valuesList)
 		insert_vals = '), ('.join(valuesList)
-		print(insert_vals)
+		# print(insert_vals)
 		insert_vals = query_insert_atts.format(insert_vals)
-		print(insert_vals)
+		# print(insert_vals)
 		sqlExec(insert_vals)
-		call('storeAtts', (self.id, self.company_id, len(valuesList), 1, 1, 1, 0))
+
+		#  begin test code
+		# call('createMissingVals', (0,))
+		# query = '''UPDATE _att_stage S
+		# 	STRAIGHT_JOIN dom_domain D ON D.dom_name = S.ats_dom_name
+		# 	JOIN att_attribute A ON A.att_name = S.ats_att_name
+		# 	LEFT OUTER JOIN dxa_domain_x_attribute X ON X.dxa_dom_id = D.dom_id AND X.dxa_att_id = A.att_id
+		# 	SET S.ats_dom_name = D.dom_id, S.ats_att_name = A.att_id, S.ats_is_long = LENGTH(S.ats_value) > 140
+		# 	, S.ats_is_multi = COALESCE(X.dxa_att_is_multi,0);'''
+		# sqlExec(query) # update w fkeys for testing only
+		# results = sqlFetchAll('Select ats_att_name, ats_dom_name, ats_value from _att_stage;')
+		# # print(results)
+		# for row in results:
+		# 	print('space')
+		# 	print('space')
+		# 	for col in row:
+		# 		print(col + ' = ' + str(row.get(col) or 'none'))
+		#  end test code
+
+		return call('storeAtts', (self['id'], self['company_id'], len(valuesList), 1, 1, 1, 0))
 		
 	def getAtts(self, domain, att_dict = {}): # empty dict means all
 		"""retrieve atts for an entity
@@ -187,15 +214,28 @@ class Entity(dict): # make it a new style class with base of dictionary
 		
 	def getHistory(self):
 		pass
+	
+	def showResults(self):
+		return 
 		
-	@classmethod
-	def cleanUp(cls):
-		# for k, v in allInstances:
-		pass
+	# @classmethod
+	# def cleanUp(cls):
+	# 	# for k, v in allInstances:
+	# 	pass
 
-x = Entity('user', 33, 66)
-# x = sqlFetchValue('SHOW CREATE TABLE _att_stage;')
-# print(x.someVal)
+
+# from att import Entity
+# x = Entity('user', 33, 66)
+# res = x.setAtts('attribute', {'name': {'value': 'bob', 'att': 'name', 'domain': 'attribute', 'keepOld': False}, 'age': {'value': 11}, 'hometown':{'value': 'boston', 'keepOld': True}, 'notes': {'value': 'baker ****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************bye dewey*******'}}, True)
+# print('1)  sproc results are:')
+# print(res[0])
+
+# print('2)  sproc results are:')
+# print(res[1])
+
+# print('3)  sproc results are:')
+# print(res[2])
+
 
 class Admin:
 	
