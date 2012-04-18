@@ -1,89 +1,70 @@
-# to run this server
-#  python ~/Sites/att/att.py
+# an "entity" is an abstract pointer for a rec of "ety_entity_type"
+	# (cols:  xxx_id, ety_id, encode, com_id)
+# an "ety_entity_type" represents a table in another schema
+	#  eg  company, user, case, document, author
+# a "dom_domain" is a grouping of related attributes
+	# eg prefs_ui_agent, user_prefs_ui_sup, user_prefs_security
+# "att_attribute" is the name of some stored value (think column name)
+	# eg  age, name, dob, hometown
+# val_values track the actual column vals;  values are stored at the intersection of:
+	#  ent_entity, att_attribute, dom_domain
+	# val_value is the actual value stored for this entity, for this attribute, in this domain
+# attributes at SOME domains can be created on the fly by the EAV system
+# a "data_type" is the kind of value stored in an attribute
 
-# to restart api:  ./startserver.sh
-# to config DB:  sudo nano /etc/mysql/my.cnf  to restart:  sudo service mysql restart
-# to restart DB see:  http://www.cyberciti.biz/faq/install-mysql-server-5-on-ubuntu-linux/
-
-from datetime import datetime
-from time import time
-import json
-
-# app.config.pyfile(app.root_path+'/papi_settings.cfg', silent=False)
-# read vals with app.config['UC_VAL_NAME'] -- app.config['DEBUG']
-
-import logging
-import logging.handlers
+from types import DictType, StringType, ListType, TupleType, BooleanType, FunctionType
 from db import connect, call, sqlExec, sqlFetchAll, sqlFetchRow, sqlFetchValue
 conn, cur = connect();
 
-# test = call('spTest', (33,))
-# # print(test)
-# for resultSet in test:
-# 	for row in resultSet:
-# 		print(row)
-		
-
-# -- drop table _att_stage;
-# CREATE TEMPORARY TABLE IF NOT EXISTS _att_stage LIKE _tpl_att_stage;
+# def validate(val_type, val_name):
+# 	'''make sure that name is a valid rec in type'''
+# 	return True
 # 
-# TRUNCATE TABLE _att_stage;
-# INSERT INTO _att_stage
-# 	(ats_dom_name, ats_att_name, ats_value, ats_keep_old) VALUES
-# 	('ats_dom_name', 'ats_att_name', 'ats_value', 0);
-# 	
-# SELECT * FROM _att_stage;
-	
-# an "entity_type" is basically a table in another schema
-# a "domain" is a grouping of attributes  (user_prefs_ui_agent, user_prefs_ui_sup, user_prefs_security, )
-	# attributes at SOME domains can be created on the fly by the app
-# an "entity" is the abstract pointer for "entity_type"  (cols:  xxx_id, ety_id, encode, com_id)
-# an "attribute" is something that stores a value in the named domain; each att contains the following:
-# 	name, [listOfIncludedDomains], isLong, encrypt, [perDomainDataType]
-# a "data_type" is the kind of value stored in an attribute
-# val_value is the actual value stored for this entity, for this attribute, in this domain
-# every call requires:  company_id, domain, attribute, value
+# def isValidEntityType(entity_type):
+# 	return sqlFetchValue("Select ety_id from ety_entity_type where ety_name = '{0}';".format(entity_type))
+# 
+# def isValidDomain(domain):
+# 	return sqlFetchValue("Select dom_id from dom_domain where dom_name = '{0}';".format(domain))
 
-# expectedDomains = ['company', 'companyPref', 'role', 'user', 'userPref']
-# atts = [{}, {}, {}, {}, {}]
-	
-def validate(val_type, val_name):
-	'''make sure that name is a valid rec in type'''
-	return True
 
-def isValidEntityType(entity_type):
-	return sqlFetchValue("Select ety_id from ety_entity_type where ety_name = '{0}';".format(entity_type))
-
-def isValidDomain(domain):
-	return sqlFetchValue("Select dom_id from dom_domain where dom_name = '{0}';".format(domain))
-
+# I didn't put these functions in the Entity class because I thought that
+# some of them might also be used by the Admin class
 def loadEntity(instance, xxx_id):
-	# instance._data = sqlFetch(instance.type_id, id)
-	results = call('att.loadEntity', (instance['type'], xxx_id, instance['company_id'], 0))
-	results = results[0][0] #1st row of 1st tuple
-
-	instance['_entity'] = results #call('loadEntity', (instance.type, id, instance.company_id, 0))
+	results = call('att.loadEntity', (instance['type'], xxx_id, instance['company_id'], 0))[0]
+	# get 1st row of result tuple
+	instance['_entity'] = results
 	instance['_all_atts_loaded'] = False
 	# print(instance['_entity'])
 	instance['id'] = results['ent_id']
+	instance['ety_id'] = results['ent_ety_id']
 	if instance['id'] is None or instance['id'] <= 0:
 		raise ValueError
 	return instance
 
+def cacheAtts(instance, attList):
+	'''stores atts in a sub-dict ['atts'] of the object'''
+	instance['atts'] = instance.get('atts') or {}	
+	for rec in attList:
+		att_name = rec['att_name'].lower()
+		domain = rec['dom_name']
+		att_value = rec['val_value']
+		# mod_dttm = rec['val_mod_dttm']
+		# data_type = rec['dty_name']
+		# msg = '''att name '{0}' (in '{1}') with val of "{2}" was modified on {3}; type={4}'''.format(att_name, domain, att_value[0:50], mod_dttm, data_type)
+		# print(msg)
+		instance['atts'][att_name] = att_value
+	print(instance['atts'])
+
 def loadAllAtts(instance, att_names='all'): # , *argsAsSequ
 	entVals = instance['_entity']
-	attList = call('loadAllAtts', (entVals['ent_id'], entVals['ent_ety_id'], entVals['ent_com_id'], '', 0))
-	if attList:
-		attList = attList[0]
-	else:
+	attList = call('loadAtts', (entVals['ent_id'], entVals['ent_ety_id'], entVals['ent_com_id'], '', 0, 0) );
+	if not attList:
 		print('no att vals found')
 		attList = tuple()
 	instance['_atts_count'] = len(attList)
 	instance['_all_atts_loaded'] = True
-	instance['atts'] = {}
-	for t in attList:
-		instance['atts'][t.att_name] = t
-	return len(attList)
+	cacheAtts(instance, attList)
+	return len(attList) # instance['atts']
 
 def insertVals(att_name, valsTbl, domain, keepOld):
 	'''returns 8 val tuple for the insert stmt in query_insert_atts below
@@ -92,7 +73,7 @@ def insertVals(att_name, valsTbl, domain, keepOld):
 	# print('key=' + key)
 	# print('vals:')
 	# print(valsTbl)
-	return (valsTbl.get('domain') or domain or ''), (att_name or valsTbl.get('att')), (valsTbl.get('value') or ''), (keepOld or valsTbl.get('keepOld')), 0, 0, 0, 0
+	return (valsTbl.get('domain') or domain or ''), (att_name or valsTbl.get('att')), (valsTbl.get('value') or ''), (keepOld or valsTbl.get('keepOld')), 0, 0, 0, '0000-00-00'
 
 # query_insert_atts is static string for passing vals
 # into sproc storeAtts via setAtts below
@@ -111,22 +92,18 @@ class Entity(dict): # make it a new style class with base of dictionary
 	
 	max att size = 16 mb
 	'''
-	# allInstances = {} # list of created instances; class var
 	
 	def __init__(self, entity_type, company_id, xxx_id):
 		'''P3 (id) is the ID in some external table;  not ent_entity.ent_id which is internal'''
-
+		assert xxx_id and xxx_id > 0, 'You must pass the external rec_id as P3'
+		assert company_id and company_id > 0, 'You must pass the company_id for security reasons'
 		dict.__init__(self) # call built in method
-		# type_id = isValidEntityType(entity_type)
-		# if type_id is None or type_id < 1:
-		# 	raise Error
-		# self.['type_id'] = type_id
+
 		self['type'] = entity_type #['type']
 		self['company_id'] = company_id
 		# self['atts'] = {} #dict of actual atts retrieved
 		# self['_entity'] = {} # place to store the ent_entity rec
 		loadEntity(self, xxx_id) # stores other cols on self/instance._data
-		# Entity.allInstances.setdefault(id(self), self) # keep track of created instances for destruction in cleanUp() below
 		
 	def __call__(self, domain): # makes instance callable
 		# returns all atts within the named domain
@@ -134,17 +111,15 @@ class Entity(dict): # make it a new style class with base of dictionary
 		# pass
 		
 	def __getattr__(self, key): # called when an attribute lookup fails
+		key = key.lower()
 		if not self['_all_atts_loaded']:
 			loadAllAtts(self) # must put them in the same place a normal dict would put them
+		
 		if key not in self['atts']:
 			print('attribute "' + key + '" does not exist for this obj')
-		return self['atts'].get(key) # return loaded value or None
-	
-	# def get(self, key, *args):
-	# 	if not args:
-	# 		args = ('not provided--DG?',)
-	# 
-	# 	return dict.get(self, key, *args)		
+			
+		print('running getattr')
+		return self['atts'].get(key) # return loaded value or None	
 
 	def __setattr__(self, name, value):
 		# dict.__setattr__(self, name, value)
@@ -163,7 +138,6 @@ class Entity(dict): # make it a new style class with base of dictionary
 		JOIN exd_ety_x_domain E ON E.exd_ety_id = T.ety_id
 		JOIN dom_domain D ON D.dom_id = E.exd_dom_id
 		WHERE ety_name = '{0}';'''.format(entity_type)
-		
 		return sqlFetchAll(query)
 		
 		
@@ -179,16 +153,16 @@ class Entity(dict): # make it a new style class with base of dictionary
 		valuesList = ["'{0[0]}', '{0[1]}', '{0[2]}', {0[3]}, {0[4]}, {0[5]}, {0[6]}, '{0[7]}'".format(insertVals(k, t, domain, keepOld)) for k, t in att_dict.items()]
 		insert_vals = '), ('.join(valuesList) # make vals str from list
 		insert_vals = query_insert_atts.format(insert_vals)
-		print('------')
-		print(insert_vals)
-		print('------')
+		# print('------')
+		# print(insert_vals)
+		# print('------')
 		sqlExec(insert_vals) # insert into temp table
 
 		testMode = 0 # set to 16 if you want the sproc to return test results
 		# setting to 32 could potentially delete ALL your data
 		results = call('storeAtts', (self['id'], self['company_id'], len(valuesList), 1, 1, 1, testMode))
 		#  begin test code
-		if testMode = 16:
+		if testMode == 16:
 			for row in results:
 				for col in row:
 					print(col + ' = ' + str(row.get(col) or 'none'))
@@ -197,55 +171,76 @@ class Entity(dict): # make it a new style class with base of dictionary
 		# end test code
 		return results
 		
-	def getAtts(self, domain, att_list = []): # empty list means all
+	def getAtts(self, domain = '', att_list = []): # empty list means all
 		"""retrieve atts for an entity
+		you can pass simply a comma delim att_name list, or a list of:
+		domain:att_name,domain:att_name,
 		
-		getAtts(domain, att_dict = {dob=True,facebookHandle=True})
-		returns a dictionary of lists (value, datatype, version, isMissing, isLong, isEncrypted)
+		getAtts(domain, att_dict = {'attribute': 'dob', 'attribute': 'facebookHandle', 'preference': 'uiSetting'})
+		returns a dictionary of lists (domain_name, attribute_name, value, datatype, mod_dttm, att_id)
 			empty or "all" in domain (P1) means: get atts for all domains
 			empty dict (P2) means all atts for the specified domains
 		"""
+		
+		if domain in ('all','','ALL'):
+			domain = ''
+		fld_delim = ':'
+		row_delim = ','
 		att_names = ''
-		if att_list:
+		att_param_count = 0
+		# if not gettina all atts (or all in a given domain), we need to make P4 look like:
+		# domain:att_name,domain:att_name,
+		if att_list and domain: # both not empty
 			param2_type = type(att_list)
-			if param2_type == type(list()) or param2_type == type(tuple()):
-				sp_param_type = 'list'
-				att_names == ','.join(att_list)
+			# DictType, StringType, ListType, TupleType
+			if param2_type == ListType or param2_type == TupleType:
+				# sp_param_type = 'list'
+				att_param_count = len(att_list)
+				padStr = row_delim + domain + fld_delim
+				att_names = padStr.join(att_list)
+				att_names = domain + fld_delim + att_names + row_delim
+				print('when att_list is list/tuple, params=' + att_names)
 
-			# elif param2_type == type(dict()):
-			# 	sp_param_type = 'dict'
-			# 	att_names == ','.join(att_list)
-		
+			elif param2_type == DictType:
+				# sp_param_type = 'dict'
+				att_param_count = len(att_list)
+				for dom, att in att_list.items():
+					att_names = att_names + dom + fld_delim + att + row_delim
+				print('when att_list is dict, params=' + att_names)
+					
+			elif param2_type == StringType:
+				# sp_param_type = 'string'
+				if att_list.find(fld_delim) == -1: # there is only ONE field (att_name) in this string
+					# need to add the domain
+					for att in att_list.split(row_delim):
+						att_param_count = att_param_count + 1
+						att_names = att_names + domain + fld_delim + att + row_delim
+				print('when att_list is string, params=' + att_names)
+			# P4 should either be a domain name, or a list of domain:att_name, vals
+			domain = att_names # end of if stmt
+					
 		# call loadAtts(p_ent_id, p_ent_ety_id, p_ent_com_id, p_att_list, p_att_count, p_encode);
-		results = call('loadAtts', (self['id'], self['company_id'], domain, att_names, 1, 1, 0))
-		
-		return results
-
+		attList = call('loadAtts', (self['id'], self['ety_id'], self['company_id'], domain, att_param_count, 0))
+		# print(attList)
+		cacheAtts(self, attList)
+		return attList
 
 	def clearAtts(self, domain, att_list):
 		pass
 		
 	def getHistory(self, domain, attribute):
-		pass
+		pass 
 	
-		
-	# @classmethod
-	# def cleanUp(cls):
-	# 	# for k, v in allInstances:
-	# 	pass
 
 
 # from att import Entity
 # x = Entity('user', 33, 66)
-# res = x.setAtts('attribute', {'name': {'value': 'bob', 'att': 'name', 'domain': 'attribute', 'keepOld': False}, 'age': {'value': 11}, 'hometown':{'value': 'boston', 'keepOld': True}, 'notes': {'value': 'baker ****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************bye dewey*******'}}, 1)
-# print('1)  sproc results are:')
+# res = x.setAtts('attribute', {'name': {'value': 'Eddie', 'att': 'name', 'domain': 'attribute', 'keepOld': False}, 'age': {'value': 14}, 'hometown':{'value': 'Easton', 'keepOld': True}, 'notes': {'value': 'Earth ****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************Earth*******'}}, 1)
+# y = x.getAtts()
+# y
+# x['age']
+
 # print(res[0])
-
-# print('2)  sproc results are:')
-# print(res[1])
-
-# print('3)  sproc results are:')
-# print(res[2])
 
 
 class Admin:
@@ -269,158 +264,3 @@ class Admin:
 	
 	def listObjects(domain='companyPref', company=0, atts=None):
 		pass
-	
-
-# @app.route('/')
-# @app.route('/status/')
-def hello_world():
-	#return "Hello Terra {0} ".format('girl')
-	# sqlExec("select 1, 2, 3, DATE_FORMAT(Now(),'%Y-%m-%d %H:%i:%s') AS DtAdded;")
-	# resp = db.cur.fetchone()
-	return jsonify({'results': 'Minggl API confirmed!','status':'ok'})
-
-# @app.route('/error/') # to test throwing an err & getting msg
-def testErrorEmail():
-	try:
-		1/0
-	except:
-		app.logger.exception('you should get this email')
-		return jsonify({'results': 'email sent','status':'error'})
-
-# @app.route('/hello/<name>')
-def hello(name=None):
-	# no such template
-	return render_template('hello.html', name=name, pic='/static/Icon.jpg')
-
-
-def requestDataAsDict():
-	try:
-		if request.method == 'POST':
-			# data = json.loads(request.form['data'])
-			data = request.json # if mime type is set to application/json
-		elif request.method == 'GET':
-			data = json.loads(request.args['data'])
-	except KeyError:
-		data = {'err' : 'nothing found in "data" for get or post'}
-	return data # or 'data must have been None'
-		
-# @app.route('/ws/user/create/', methods=['POST'])
-def user_create():
-	data = requestDataAsDict()
-	# print(data)
-	# data = {'use_uuid':'888777', 'use_handle':'dewe888777', 'use_first': 'dewey', 'use_last': 'gaed', 'use_email': 'dewey@hello.com', 'use_post_code':78730, 'use_phone': '512-785', 'use_salt': 'gh', 'use_pw': 'north', 'use_birth': '1961-11-08', 'use_city': 'houston', 'use_state': 'tx', 'use_lost_pw_ques': 'dog name', 'use_lost_pw_answ': 'frisky', 'use_sta_id': 0, 'use_typ_id': 111, 'use_mail_list':0, 'use_profile_visib': 1, 'use_msg_notify_encode':33, 'use_encode':0}
-	# FIXME  put IGNORE in the insert below after extensive testing
-	query = '''INSERT INTO gro.use_user (use_uuid, use_handle, use_first, use_last, use_email, use_post_code, use_phone, use_salt, use_pw, use_birth, use_city, use_state, use_lost_pw_ques, use_lost_pw_answ, use_add_dttm, use_sta_id, use_typ_id, use_mail_list, use_profile_visib, use_msg_notify_encode, use_encode)
-	VALUES
-	("{use_uuid}", "{use_handle}", "{use_first}", "{use_last}", "{use_email}", "{use_post_code}", "{use_phone}", "{use_salt}", "{use_pw}", "{use_birth}", "{use_city}", "{use_state}", "{use_lost_pw_ques}", "{use_lost_pw_answ}", now(), {use_sta_id}, {use_typ_id}, {use_mail_list}, {use_profile_visib}, {use_msg_notify_encode}, {use_encode});'''
-	query = query.format(**data) #['use']
-	# print(query)
-	sqlExec(query)
-	query = """Select use_id from gro.use_user where use_uuid = '{use_uuid}';"""
-	query = query.format(**data)
-	# print(query)
-	# query = """Select LAST_INSERT_ID() as use_id;""" # dont use this in case already inserted and fails (ignore) above
-	sqlExec(query)
-	use_id = db.cur.fetchone() #or {'use_id':0}  #FIXME after testing
-	# print(use_id)
-	return jsonify({'use_id': use_id['use_id'], 'use_uuid': data['use_uuid']})
-
-# @app.route('/ws/user/update/', methods=['POST'])
-def user_update():
-	data = requestDataAsDict()
-	# calc a unique handle
-	# data['use_handle'] = returnUniqueHandle(data['use_id'], data['use_handle'])
-	
-	query = '''UPDATE use_user
-	SET use_handle = "{use_handle}", use_first = "{use_first}", use_last = "{use_last}"
-	, use_email = "{use_email}", use_post_code = "{use_post_code}", use_phone = "{use_phone}"
-	, use_pw = "{use_pw}", use_birth = "{use_birth}", use_city = "{use_city}"
-	, use_state = "{use_state}", use_image_uri = "{use_image_uri}", use_lost_pw_ques = "{use_lost_pw_ques}"
-	, use_lost_pw_answ = "{use_lost_pw_answ}", use_sta_id = {use_sta_id}, use_typ_id = {use_typ_id}
-	, use_mail_list = {use_mail_list}, use_profile_visib = {use_profile_visib}
-	, use_msg_notify_encode = {use_msg_notify_encode}, use_encode = {use_encode}
-	WHERE use_id = {use_id};'''
-	query = query.format(**data)
-	# if any vals were not passed, there will be strs like {col_name} left in the sql
-	# change it to col = col  (aka change nothing)
-	query = query.replace('"{','')
-	query = query.replace('}"','')
-	query = query.replace('{','') # do same for unquoted strs
-	query = query.replace('}','')
-	sqlExec(query)
-# /ws/user/update/	
-
-# @app.route('/ws/user/lookup/', methods=['POST'])
-def user_lookup():
-	'''takes method and value and finds user details'''
-	data = requestDataAsDict()
-	print('cc just searched on ' + data['value'])
-	# use_lookup(p_use_id, p_meth_id, p_srchVal, p_encode)
-	db.cur.callproc('gro.use_lookup', (data['use_id'], data['method'], data['value'], 0))
-	# returns:  use_id, use_handle, use_first, use_last, use_email, use_post_code, use_phone
-	# 	, use_birth, use_city, use_state, use_image_uri
-	userRec = db.cur.fetchone() or {'use_id':0}
-	print('and found user_id=' + str(userRec['use_id']))
-	db.cur.nextset()
-	return jsonify({'results' : userRec})
-# /ws/user/lookup/
-	
-
-# @app.route('/ws/user/ic/getUpdates/', methods=['POST'])
-def list_recentFlockSharedEvents():
-	# load all event recs that girls in my flock have shared w server
-	# since my last sync
-	# then I'll need to load their responses to my events as well
-	data = requestDataAsDict() # should contain data to create/update inner circle list
-	user_id = int(data["use_id"]) # int(data["use_id"])
-	last_sync = datetime.fromtimestamp(data["last_sync"]) # this is a unixtime in secs
-	last_sync = last_sync.strftime("%Y-%m-%d %H:%M:%S")
-	# print('last_sync:')
-	# print(last_sync)
-	query = '''SELECT STRAIGHT_JOIN
-		E.eve_id, E.eve_use_id, E.eve_beh_id, E.eve_per_id
-		, E.eve_per_nickname, E.eve_ven_id, E.eve_glo_id
-		, UNIX_TIMESTAMP(E.eve_occur_dttm) as eve_occur_dttm
-		, UNIX_TIMESTAMP(E.eve_add_dttm) as eve_add_dttm, E.eve_scale
-		, E.eve_note, E.eve_notifyPrefs, (E.eve_encode|8) as eve_encode
-		, E.eve_resp_pref_typ_id 
-	FROM gro.inc_inner_circle I
-	JOIN gzt.eve_event E
-	ON E.eve_use_id = I.inc_dst_use_id and E.eve_add_dttm > "{0}"
-	-- JOIN gro.per_person P ON P.per_id = E.eve_per_id 
-	WHERE I.inc_src_use_id = {1} ;'''
-	query = query.format(last_sync, user_id)
-	# print(query)
-	sqlExec(query)
-	results = {}
-	results["updates"] = db.cur.fetchall() or {}
-	# print('int(time()):')
-	# print(int(time()))
-	results["serverTime"] = int(time())  # secs since epoch
-	db.cur.nextset()
-	results["responses"] = getResponses(user_id, last_sync)
-	# print(results)
-	return jsonify({'results': results})
-# /ws/user/ic/getUpdates/
-
-# @app.route('/ws/user/ic/getResponses/', methods=['POST'])
-def getResponses_from_innercircle():
-	# niu;  data returned in getUpdates above
-	data = requestDataAsDict()
-	user_id = int(data['use_id'])
-	last_sync = datetime.fromtimestamp(data["last_sync"]) # this is a unixtime in secs
-	last_sync = last_sync.strftime("%Y-%m-%d %H:%M:%S")
-	results = {}
-	results["responses"] = getResponses(user_id, last_sync)
-	results["serverTime"] = int(time())
-	return jsonify({'results': results})
-# /ws/user/ic/getResponses/	
-
-# testConn = connect()
-	# host='localhost', user='deweyg', passwd='zebra10', db='att', conv={ FIELD_TYPE.LONG: int }
-	# attempt initial connection to confirm db available at server start
-# if __name__ == '__main__':
-	# host = app.config['HOST']
-	# port = app.config['PORT']
-	# debug = app.config['DEBUG']
-	# app.run(host="ec2-107-21-98-73.compute-1.amazonaws.com", port=5000, debug=True) # app.run()

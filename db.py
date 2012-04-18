@@ -25,15 +25,20 @@ def connect():
 		conn = MySQLdb.connect(host='localhost', user='deweyg', passwd='zebra10', db='att'
 			# , conv={FIELD_TYPE.LONG: int, FIELD_TYPE.TINY: int} # defaults are better here
 			, cursorclass=MySQLdb.cursors.DictCursor
-			, init_command='CREATE TEMPORARY TABLE IF NOT EXISTS _att_stage LIKE _tpl_att_stage;')
+			, init_command='set autocommit=1;')
+		conn.commit() # clear out anything lingering unsaved
 		# copy conn at bottom of file
 		# conn.cursor() # returns rows as tuples
 		# conn.cursor(MySQLdb.cursors.DictCursor) # returns rows as dictionaries
 
 		cur = conn.cursor(MySQLdb.cursors.DictCursor)
-		cur.execute('set autocommit=1;')
-		# cur.callproc('init_session',(0,))
+		# cur.execute('set autocommit=1;')
+		cur.callproc('up_SessInit_Connect',(0,))
 		cur.nextset() # get rid of any lingering results
+		
+		test = sqlFetchRow('SHOW CREATE TABLE _att_stage;')
+		print(test)
+		
 	except MySQLdb.Error, e:
 		print "Error %d: %s" % (e.args[0], e.args[1])
 		exit (e)
@@ -57,10 +62,14 @@ def call(procName, paramsAsSequence):
 		allSets.append(results)
 		cur.nextset()
 		results = fetchAll()
-	return allSets
+	if len(allSets) == 1:
+		allSets = allSets[0] # return the tuple for 1st result set if only 1
+	return allSets # either a list of tuples (mult results) or one tuple (1 result set)
 
 def sqlExec(query):
 	global cur
+	print('abt to execute:')
+	print(query)
 	return cur.execute(query)
 	
 def sqlFetchAll(query):
