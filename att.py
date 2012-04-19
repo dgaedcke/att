@@ -43,17 +43,18 @@ def loadEntity(instance, xxx_id):
 
 def cacheAtts(instance, attList):
 	'''stores atts in a sub-dict ['atts'] of the object'''
+	pass # haven't decided how to implement this properly
 	instance['atts'] = instance.get('atts') or {}	
 	for rec in attList:
-		att_name = rec['att_name'].lower()
-		domain = rec['dom_name']
-		att_value = rec['val_value']
+		att_name = rec['attribute_name'].lower()
+		domain = rec['domain']
+		att_value = rec['att_value']
 		# mod_dttm = rec['val_mod_dttm']
 		# data_type = rec['dty_name']
 		# msg = '''att name '{0}' (in '{1}') with val of "{2}" was modified on {3}; type={4}'''.format(att_name, domain, att_value[0:50], mod_dttm, data_type)
 		# print(msg)
 		instance['atts'][att_name] = att_value
-	print(instance['atts'])
+	# print(instance['atts'])
 
 def loadAllAtts(instance, att_names='all'): # , *argsAsSequ
 	entVals = instance['_entity']
@@ -61,11 +62,15 @@ def loadAllAtts(instance, att_names='all'): # , *argsAsSequ
 	if not attList:
 		print('no att vals found')
 		attList = tuple()
-	instance['_atts_count'] = len(attList)
+	instance['_atts_count'] = len(attList[0])
 	instance['_all_atts_loaded'] = True
 	cacheAtts(instance, attList)
 	return len(attList) # instance['atts']
 
+def castNoneAsZero(val):
+	'''also casts True as 1'''
+	return (val != None) * 1
+	
 def insertVals(att_name, valsTbl, domain, keepOld):
 	'''returns 8 val tuple for the insert stmt in query_insert_atts below
 	values in valsTbl take PRECEDENCE over values in P1 & P3
@@ -73,7 +78,7 @@ def insertVals(att_name, valsTbl, domain, keepOld):
 	# print('key=' + key)
 	# print('vals:')
 	# print(valsTbl)
-	return (valsTbl.get('domain') or domain or ''), (att_name or valsTbl.get('att')), (valsTbl.get('value') or ''), (keepOld or valsTbl.get('keepOld')), 0, 0, 0, '0000-00-00'
+	return (valsTbl.get('domain') or domain or ''), (att_name or valsTbl.get('att')), (valsTbl.get('value') or ''), castNoneAsZero(keepOld or valsTbl.get('keepOld')), 0, 0, 0, '0000-00-00'
 
 # query_insert_atts is static string for passing vals
 # into sproc storeAtts via setAtts below
@@ -139,8 +144,7 @@ class Entity(dict): # make it a new style class with base of dictionary
 		JOIN dom_domain D ON D.dom_id = E.exd_dom_id
 		WHERE ety_name = '{0}';'''.format(entity_type)
 		return sqlFetchAll(query)
-		
-		
+
 	def atts(self, domain = ''):
 		'''returns list of atts in the named domain (or all)'''
 		
@@ -199,14 +203,14 @@ class Entity(dict): # make it a new style class with base of dictionary
 				padStr = row_delim + domain + fld_delim
 				att_names = padStr.join(att_list)
 				att_names = domain + fld_delim + att_names + row_delim
-				print('when att_list is list/tuple, params=' + att_names)
+				# print('when att_list is list/tuple, params=' + att_names)
 
 			elif param2_type == DictType:
 				# sp_param_type = 'dict'
 				att_param_count = len(att_list)
 				for dom, att in att_list.items():
 					att_names = att_names + dom + fld_delim + att + row_delim
-				print('when att_list is dict, params=' + att_names)
+				# print('when att_list is dict, params=' + att_names)
 					
 			elif param2_type == StringType:
 				# sp_param_type = 'string'
@@ -215,7 +219,7 @@ class Entity(dict): # make it a new style class with base of dictionary
 					for att in att_list.split(row_delim):
 						att_param_count = att_param_count + 1
 						att_names = att_names + domain + fld_delim + att + row_delim
-				print('when att_list is string, params=' + att_names)
+				# print('when att_list is string, params=' + att_names)
 			# P4 should either be a domain name, or a list of domain:att_name, vals
 			domain = att_names # end of if stmt
 					
@@ -244,11 +248,12 @@ class Entity(dict): # make it a new style class with base of dictionary
 
 
 class Admin:
-	
+	'''not yet implemented
+	to create domains, attributes, data_types, entity_types
+	and set data_types for atts in each domain'''
 	def addDomain(name='companyPref', atts=None, company=0):
 		# classes and their atts are system global unless company passed in
 		pass
-	
 	
 	def addAttsToDomain(name='companyPref', atts=None, company=0):
 		pass

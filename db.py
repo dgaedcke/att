@@ -36,8 +36,8 @@ def connect():
 		cur.callproc('up_SessInit_Connect',(0,))
 		cur.nextset() # get rid of any lingering results
 		
-		test = sqlFetchRow('SHOW CREATE TABLE _att_stage;')
-		print(test)
+		# test = sqlFetchAll('SHOW variables;')
+		# print(test)
 		
 	except MySQLdb.Error, e:
 		print "Error %d: %s" % (e.args[0], e.args[1])
@@ -68,8 +68,8 @@ def call(procName, paramsAsSequence):
 
 def sqlExec(query):
 	global cur
-	print('abt to execute:')
-	print(query)
+	# print('abt to execute:')
+	# print(query)
 	return cur.execute(query)
 	
 def sqlFetchAll(query):

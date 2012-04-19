@@ -78,11 +78,11 @@ CREATE TABLE `att_attribute` (
   PRIMARY KEY (`att_id`,`att_dty_id`),
   UNIQUE KEY `att_name` (`att_name`),
   KEY `att_in_every_domain` (`att_in_all_dom`)
-) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=79 DEFAULT CHARSET=utf8;
 
 /*Data for the table `att_attribute` */
 
-insert  into `att_attribute`(`att_id`,`att_dty_id`,`att_in_all_dom`,`att_keep_old`,`att_hash_it`,`att_is_long`,`att_encode`,`att_name`) values (1,3,0,0,0,0,0,'age'),(2,1,0,0,0,0,0,'name'),(20,1,0,0,0,0,0,'hometown'),(23,2,0,0,0,0,0,'notes');
+insert  into `att_attribute`(`att_id`,`att_dty_id`,`att_in_all_dom`,`att_keep_old`,`att_hash_it`,`att_is_long`,`att_encode`,`att_name`) values (1,3,0,0,0,0,0,'age'),(2,1,0,0,0,0,0,'name'),(20,1,0,0,0,0,0,'hometown'),(23,2,0,0,0,0,0,'notes'),(24,1,0,0,0,0,0,'access'),(25,1,0,0,0,0,0,'dob'),(26,1,0,0,0,0,0,'handle'),(35,1,0,0,0,0,0,'buttonColor'),(36,1,0,0,0,0,0,'autoLogoffInterval'),(37,1,0,0,0,0,0,'userHandle'),(48,1,0,0,0,0,0,'listColor');
 
 /*Table structure for table `dom_domain` */
 
@@ -95,11 +95,11 @@ CREATE TABLE `dom_domain` (
   `dom_name` varchar(40) NOT NULL COMMENT 'domain name',
   PRIMARY KEY (`dom_id`),
   UNIQUE KEY `dom_name_add_atts_on_fly` (`dom_name`,`dom_new_atts_on_fly`)
-) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=52 DEFAULT CHARSET=utf8;
 
 /*Data for the table `dom_domain` */
 
-insert  into `dom_domain`(`dom_id`,`dom_new_atts_on_fly`,`dom_encode`,`dom_name`) values (1,0,0,'attribute'),(2,0,0,'preference'),(3,0,0,'privilege'),(4,0,0,'type'),(5,0,0,'external');
+insert  into `dom_domain`(`dom_id`,`dom_new_atts_on_fly`,`dom_encode`,`dom_name`) values (1,0,0,'attribute'),(2,0,0,'preference'),(3,0,0,'privilege'),(4,0,0,'type'),(5,0,0,'external'),(6,0,0,'identity');
 
 /*Table structure for table `dty_data_type` */
 
@@ -150,13 +150,13 @@ CREATE TABLE `ent_entity` (
   `ent_mod_dttm` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'date time of last attribute change',
   `ent_encode` tinyint(3) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`ent_id`),
-  UNIQUE KEY `xxx_id_ety_id_com_id` (`ent_xxx_id`,`ent_ety_id`,`ent_com_id`),
-  UNIQUE KEY `type_rec_id` (`ent_ety_id`,`ent_com_id`,`ent_xxx_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8;
+  UNIQUE KEY `type_rec_id` (`ent_ety_id`,`ent_com_id`,`ent_xxx_id`),
+  UNIQUE KEY `xxx_id_ety_id_com_id` (`ent_xxx_id`,`ent_ety_id`,`ent_com_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8;
 
 /*Data for the table `ent_entity` */
 
-insert  into `ent_entity`(`ent_id`,`ent_com_id`,`ent_ety_id`,`ent_xxx_id`,`ent_mod_dttm`,`ent_encode`) values (13,14,4,12,'2012-04-13 14:43:03',0),(15,33,4,66,'2012-04-13 14:54:49',0),(16,0,4,66,'2012-04-13 16:34:42',0);
+insert  into `ent_entity`(`ent_id`,`ent_com_id`,`ent_ety_id`,`ent_xxx_id`,`ent_mod_dttm`,`ent_encode`) values (13,14,4,12,'2012-04-13 14:43:03',0),(15,33,4,66,'2012-04-13 14:54:49',0),(16,0,4,66,'2012-04-13 16:34:42',0),(17,22,4,333,'2012-04-18 21:21:49',0);
 
 /*Table structure for table `erl_error_log` */
 
@@ -217,8 +217,6 @@ CREATE TABLE `lva_long_value` (
 
 /*Data for the table `lva_long_value` */
 
-insert  into `lva_long_value`(`lva_val_id`,`lva_value`) values (1,'Earth ****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************Earth*******');
-
 /*Table structure for table `memT100` */
 
 DROP TABLE IF EXISTS `memT100`;
@@ -248,11 +246,11 @@ CREATE TABLE `val_value` (
   PRIMARY KEY (`val_id`),
   UNIQUE KEY `ent_id_dom_id_att_id_value` (`val_ent_id`,`val_dom_id`,`val_att_id`),
   KEY `value_att_type` (`val_value`(30),`val_att_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8;
 
 /*Data for the table `val_value` */
 
-insert  into `val_value`(`val_id`,`val_ent_id`,`val_dom_id`,`val_att_id`,`val_version`,`val_encode`,`val_mod_dttm`,`val_value`) values (1,15,1,23,1,0,'2012-04-17 11:05:09','-1'),(2,15,1,20,1,0,'2012-04-17 17:27:50','Easton'),(3,15,1,1,1,0,'2012-04-17 17:27:50','14'),(4,15,1,2,1,0,'2012-04-17 17:27:50','Eddie');
+insert  into `val_value`(`val_id`,`val_ent_id`,`val_dom_id`,`val_att_id`,`val_version`,`val_encode`,`val_mod_dttm`,`val_value`) values (1,17,1,24,1,0,'2012-04-18 23:21:01','no_way'),(2,17,1,25,1,0,'2012-04-18 23:46:18','1980-04-10'),(3,17,1,1,1,0,'2012-04-18 23:46:18','33'),(4,17,6,26,1,0,'2012-04-18 23:21:01','@johnParker'),(5,17,1,2,1,0,'2012-04-18 23:46:18','johnnyP'),(8,17,3,24,1,0,'2012-04-18 23:21:01','yes_really'),(11,17,2,35,1,0,'2012-04-18 23:21:01','125-30-255'),(12,17,2,36,1,0,'2012-04-18 23:46:18','22'),(13,17,2,37,1,0,'2012-04-18 23:46:18','IamBob222'),(14,17,2,48,1,0,'2012-04-18 23:21:01','100-200-300');
 
 /*Table structure for table `var_value_archive` */
 
@@ -266,11 +264,11 @@ CREATE TABLE `var_value_archive` (
   `var_value` mediumblob NOT NULL COMMENT 'value',
   PRIMARY KEY (`var_id`),
   UNIQUE KEY `var_id_mod_dttm` (`var_val_id`,`var_mod_dttm`)
-) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8;
 
 /*Data for the table `var_value_archive` */
 
-insert  into `var_value_archive`(`var_id`,`var_val_id`,`var_encode`,`var_mod_dttm`,`var_value`) values (1,1,0,'2012-04-17 11:16:17','baker ****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************bye dewey*******'),(2,2,0,'2012-04-17 11:16:17','boston'),(3,3,0,'2012-04-17 11:16:17','11'),(4,4,0,'2012-04-17 11:16:17','bob'),(8,1,0,'2012-04-17 11:17:43','carol ****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************bye carol*******'),(9,2,0,'2012-04-17 11:17:43','cabo'),(10,3,0,'2012-04-17 11:17:43','12'),(11,4,0,'2012-04-17 11:17:43','charles'),(15,1,0,'2012-04-17 17:27:50','darth ****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************bye darth*******'),(16,2,0,'2012-04-17 17:27:50','denver'),(17,3,0,'2012-04-17 17:27:50','13'),(18,4,0,'2012-04-17 17:27:50','david');
+insert  into `var_value_archive`(`var_id`,`var_val_id`,`var_encode`,`var_mod_dttm`,`var_value`) values (1,5,0,'2012-04-18 23:21:01','johnP'),(2,12,0,'2012-04-18 23:21:01','15'),(3,13,0,'2012-04-18 23:21:01','IamBob'),(5,5,0,'2012-04-18 23:32:13','johnP'),(6,12,0,'2012-04-18 23:32:13','15'),(7,13,0,'2012-04-18 23:32:13','IamBob'),(9,5,0,'2012-04-18 23:33:38','johnP'),(10,12,0,'2012-04-18 23:33:38','15'),(11,13,0,'2012-04-18 23:33:38','IamBob'),(13,5,0,'2012-04-18 23:36:43','johnP'),(14,12,0,'2012-04-18 23:36:43','15'),(15,13,0,'2012-04-18 23:36:43','IamBob'),(17,5,0,'2012-04-18 23:42:03','johnP'),(18,12,0,'2012-04-18 23:42:03','15'),(19,13,0,'2012-04-18 23:42:03','IamBob'),(21,5,0,'2012-04-18 23:46:18','johnP'),(22,12,0,'2012-04-18 23:46:18','15'),(23,13,0,'2012-04-18 23:46:18','IamBob');
 
 /* Function  structure for function  `fwwq` */
 
@@ -385,7 +383,7 @@ DELIMITER $$
 	, In p_att_list_or_dom_name varchar(600), In p_att_count smallint, In p_encode tinyint)
     READS SQL DATA
     COMMENT 'loads specified atts by domain'
-BEGIN
+sproc:BEGIN
 	/*	call loadAtts(p_ent_id, p_ent_ety_id, p_ent_com_id, p_att_list_or_dom_name, p_att_count, p_encode);
 format for p_att_list_or_dom_name is crucial!!  field_delim = : and row_delim = ,
 so vals should come in looking like:  domain_name:attribute_name(comma)dom2:att2
@@ -396,45 +394,50 @@ so vals should come in looking like:  domain_name:attribute_name(comma)dom2:att2
 	declare v_fld_delim, v_row_delim char(1) default ':';
 	set v_row_delim = ',';
 	
-	-- both queries below must maintain identical return signature
-	if exists(SELECT 1 FROM att.ent_entity WHERE ent_id = p_ent_id AND ent_com_id = p_ent_com_id AND ent_ety_id = p_ent_ety_id) then
-		if locate(v_fld_delim,p_att_list_or_dom_name) = 0 then -- query ONLY by domain name
-			if length(p_att_list_or_dom_name) > 2 then -- 3 is shortest length for a domain name
-				set v_dom_id = lookupDomainType(p_att_list_or_dom_name,0);
-			end if;
-			SELECT STRAIGHT_JOIN D.dom_name, A.att_name, COALESCE(L.lva_value, V.val_value) as val_value, coalesce(Y.dty_name,'string') as dty_name
-				, V.val_mod_dttm, V.val_id
-			from val_value V 
-			join dom_domain D on D.dom_id = V.val_dom_id
-			Join att_attribute A on A.att_id = V.val_att_id
-			left outer join dxa_dom_x_att M On M.dxa_dom_id = V.val_dom_id and M.dxa_att_id = V.val_att_id
-			LEFT OUTER JOIN dty_data_type Y ON Y.dty_id = Coalesce(M.dxa_dty_id, A.att_dty_id)
-			LEFT OUTER JOIN lva_long_value L ON left(V.val_value,2) = '-1' and L.lva_val_id = V.val_id
-			where V.val_ent_id = p_ent_id AND V.val_dom_id = if(v_dom_id,v_dom_id,V.val_dom_id);
-		
-		else -- query by specific domain and attribute names
-	-- if clause handles security making sure that only authorized calls can read the atts
-			SELECT STRAIGHT_JOIN S.dom_name, S.att_name, COALESCE(L.lva_value, V.val_value) AS val_value
-				, COALESCE(Y.dty_name,'string') AS dty_name
-				, V.val_mod_dttm, V.val_id
-			FROM (SELECT A.att_id, D.dom_id, T.att_name, T.dom_name, COALESCE(X.dxa_dty_id, A.att_dty_id) AS dty_id
-					FROM (
-						SELECT SQL_NO_CACHE
-							SUBSTRING_INDEX(SUBSTRING_INDEX(p_att_list_or_dom_name,v_fld_delim,m.id),v_row_delim,-1) AS dom_name
-							, SUBSTRING_INDEX(SUBSTRING_INDEX(p_att_list_or_dom_name,v_row_delim,m.id),v_fld_delim,-1) AS att_name
-						FROM memT100 m WHERE m.id <= p_att_count
-						)
-					AS T
-				JOIN att_attribute A ON A.att_name = T.att_name
-				JOIN dom_domain D ON D.dom_name = T.dom_name
-				LEFT OUTER JOIN dxa_dom_x_att X ON X.dxa_att_id = A.att_id AND X.dxa_dom_id = D.dom_id
-				)
-			AS S
-			JOIN val_value V ON V.val_ent_id = p_ent_id AND V.val_att_id = S.att_id AND V.val_dom_id = S.dom_id
-			LEFT OUTER JOIN dty_data_type Y ON Y.dty_id = S.dty_id
-			LEFT OUTER JOIN lva_long_value L ON LEFT(V.val_value,2) = '-1' AND L.lva_val_id = V.val_id;
-		End if;
+	if not exists(SELECT 1 FROM att.ent_entity WHERE ent_id = p_ent_id AND ent_com_id = p_ent_com_id AND ent_ety_id = p_ent_ety_id) then
+		leave sproc;
 	end if;
+	
+	-- both queries below must maintain identical return signature
+	if locate(v_fld_delim,p_att_list_or_dom_name) = 0 then -- query ONLY by domain name
+		if length(p_att_list_or_dom_name) > 2 then -- 3 is shortest length for a domain name
+			set v_dom_id = lookupDomainType(p_att_list_or_dom_name,0);
+		end if;
+		SELECT STRAIGHT_JOIN D.dom_name as domain, A.att_name as attribute_name
+		, COALESCE(L.lva_value, V.val_value) as att_value
+		, coalesce(Y.dty_name,'string') as data_type
+		, V.val_mod_dttm, V.val_id
+		from val_value V 
+		join dom_domain D on D.dom_id = V.val_dom_id
+		Join att_attribute A on A.att_id = V.val_att_id
+		left outer join dxa_dom_x_att M On M.dxa_dom_id = V.val_dom_id and M.dxa_att_id = V.val_att_id
+		LEFT OUTER JOIN dty_data_type Y ON Y.dty_id = Coalesce(M.dxa_dty_id, A.att_dty_id)
+		LEFT OUTER JOIN lva_long_value L ON left(V.val_value,2) = '-1' and L.lva_val_id = V.val_id
+		where V.val_ent_id = p_ent_id AND V.val_dom_id = if(v_dom_id,v_dom_id,V.val_dom_id);
+	
+	else -- query by specific domain and attribute names
+-- if clause handles security making sure that only authorized calls can read the atts
+		SELECT STRAIGHT_JOIN S.dom_name  AS domain, S.att_name  AS attribute_name
+			, COALESCE(L.lva_value, V.val_value) AS att_value
+			, COALESCE(Y.dty_name,'string') AS data_type
+			, V.val_mod_dttm, V.val_id
+		FROM (SELECT A.att_id, D.dom_id, T.att_name, T.dom_name, COALESCE(X.dxa_dty_id, A.att_dty_id) AS dty_id
+				FROM (
+					SELECT SQL_NO_CACHE
+						SUBSTRING_INDEX(SUBSTRING_INDEX(p_att_list_or_dom_name,v_fld_delim,m.id),v_row_delim,-1) AS dom_name
+						, SUBSTRING_INDEX(SUBSTRING_INDEX(p_att_list_or_dom_name,v_row_delim,m.id),v_fld_delim,-1) AS att_name
+					FROM memT100 m WHERE m.id <= p_att_count
+					)
+				AS T
+			JOIN att_attribute A ON A.att_name = T.att_name
+			JOIN dom_domain D ON D.dom_name = T.dom_name
+			LEFT OUTER JOIN dxa_dom_x_att X ON X.dxa_att_id = A.att_id AND X.dxa_dom_id = D.dom_id
+			)
+		AS S
+		JOIN val_value V ON V.val_ent_id = p_ent_id AND V.val_att_id = S.att_id AND V.val_dom_id = S.dom_id
+		LEFT OUTER JOIN dty_data_type Y ON Y.dty_id = S.dty_id
+		LEFT OUTER JOIN lva_long_value L ON LEFT(V.val_value,2) = '-1' AND L.lva_val_id = V.val_id;
+	End if;
 END */$$
 DELIMITER ;
 
@@ -562,7 +565,7 @@ DELIMITER $$
 /*!50003 CREATE DEFINER=`deweyg`@`%` PROCEDURE `storeAtts`(IN p_ent_id BIGINT, IN p_com_id int, IN p_row_count int, IN p_1 TINYINT, IN p_2 TINYINT, IN p_3 TINYINT, IN p_encode TINYINT)
     MODIFIES SQL DATA
     COMMENT 'store all passed atts'
-BEGIN
+sproc:BEGIN
 /* call storeAtts(p_ent_id, p_com_id, p_row_count, 0,0,0, p_encode);
 	pass 16 into p_encode to get some test data back
 	pass 32 to DELETE ALL persistent storage and start over;  for testing only
@@ -572,13 +575,18 @@ BEGIN
 	declare exit handler for 1146 begin call raiseError(1146,'priv sess table _att_stage missing',0); End;
 	DECLARE EXIT HANDLER FOR 45000 BEGIN END; -- my custom err handler
 	
+	if not exists(SELECT 1 FROM att.ent_entity WHERE ent_id = p_ent_id AND ent_com_id = p_com_id) then
+		Leave sproc; -- bail out if entity not exists or not at this company
+	end if;
+	
 	-- *************  test code:  create missing dom & att vals so update join below works
 	if 32&p_encode = 32 then -- SERIOUS DANGER; DELETES ALL data from storage;
 		SET v_test_mode = v_test_mode;
 		-- CALL zadm_truncTables(0); -- SERIOUS DANGER; DELETES ALL data from storage;
 	end if;
 	set v_test_mode = 16&p_encode = 16;
-	if v_test_mode then -- will create missing attribute or domain names
+	if TRUE OR v_test_mode then -- will create missing attribute or domain names
+		-- ONLY to ease Phu testing;  disable for production
 		call zadm_createMissingVals(0);
 	end if;
 	-- ************* end test code
@@ -597,7 +605,7 @@ BEGIN
 	, S.ats_hash_it = COALESCE(X.dxa_att_hash_it, A.att_hash_it, 0);
 	-- after the update above, my ats_???_name cols now contain their respective ID's
 	if row_count() < p_row_count then
-		call raiseError(45000, 'att_name or dom_name passed does not exist in the db', 0);
+		call raiseError(45000, 'att or dom_name passed does not exist in the db', 0);
 	end if;
 	
 	IF v_test_mode THEN -- show table before inserts/ updates are run for testing
@@ -615,6 +623,7 @@ BEGIN
 				-- only create archive rec if value has changed
 			and (L.lva_val_id IS NULL and V.val_value <> S.ats_value
 				or L.lva_val_id is not null and L.lva_value <> S.ats_value);
+	
 	INSERT INTO val_value
 			(val_ent_id, val_dom_id, val_att_id, val_value)
 		SELECT p_ent_id, S.ats_dom_name, S.ats_att_name
@@ -633,7 +642,7 @@ BEGIN
 	-- now store long vals
 	INSERT INTO lva_long_value
 		(lva_val_id, lva_value)
-		SELECT straight_join V.val_id, S.ats_value
+		SELECT straight_join V.val_id, IF(S.ats_hash_it, hashIt(S.ats_value, 'AB'), S.ats_value)
 		FROM _att_stage S
 		Join val_value V On V.val_ent_id = p_ent_id and V.val_dom_id = S.ats_dom_name
 			and V.val_att_id = S.ats_att_name
@@ -685,6 +694,7 @@ Set SQL_LOG_BIN = 0, SQL_NOTES = 0;
 If common.uf_Table_DoesExist('ttLabelValue','common',0) then
 End if;
 */
+set autocommit=1; # turn on autocommit
 CREATE TEMPORARY TABLE IF NOT EXISTS ttLabelValue LIKE _tpl_ttLabelValue;
 CREATE TEMPORARY TABLE IF NOT EXISTS _att_stage LIKE _tpl_att_stage;
 /*	
@@ -719,11 +729,11 @@ Set SQL_LOG_BIN = 1;
 	call up_Signal_Error(10,'pivot tbl memT100 not inited at server boot','p_MSFL_Add_inBulk','','LOG');
 	table names cannot be longer than 64 but err 1103 (incorrect table name) can show more text */
 Set pErrMsg = If(pErrMsg='','no_msg?',pErrMsg);
-Set pErrMsg = Left(Concat_WS('_',pErrMsg,pErrCode,pCallingProc),64);
+-- Set pErrMsg = Left(Concat_WS('_',pErrMsg,pErrCode,pCallingProc),64);
 	Set pErrMsg = Replace(Replace(pErrMsg,' ','_'),'-','_'); -- spaces & hyphens cause a syntax error
 	Set pErrMsg = Replace(pErrMsg,'__','_');
 	Set pErrMsg = Replace(pErrMsg,'__','_');
-	Set @equery = Concat('Update Error.',pErrMsg,' Set Col=1 Where Col=2 And Col=3');
+	Set @equery = Concat('Update ',pErrMsg,' Set Err=1');
 	Prepare sig_err from @equery;
 	Execute sig_err;
 	Deallocate Prepare sig_err;
@@ -785,16 +795,18 @@ DELIMITER $$
     COMMENT 'store all passed atts'
 BEGIN
 /* call zadm_createMissingVals(0);
+	REGEX tester:  SELECT NOT 'SOME5123' REGEXP '^[0-9]+$' AS A;
 */
 	-- DECLARE EXIT HANDLER FOR 1146 BEGIN  END;
 	
 	-- this proc throws warnings when it tries to cast string as int
 	INSERT IGNORE INTO att.att_attribute
 		(att_name)
-		SELECT DISTINCT ats_att_name FROM _att_stage where cast(ats_att_name as unsigned) in (0,null);
+		-- find recs where ats_att_name is NOT already an int
+		SELECT DISTINCT ats_att_name FROM _att_stage where not ats_att_name REGEXP '^[0-9]+$';
 	INSERT IGNORE INTO att.dom_domain
 		(dom_name)
-		SELECT DISTINCT ats_dom_name FROM _att_stage WHERE CAST(ats_dom_name AS UNSIGNED) IN (0,NULL);
+		SELECT DISTINCT ats_dom_name FROM _att_stage WHERE not ats_dom_name REGEXP '^[0-9]+$';
 END */$$
 DELIMITER ;
 
@@ -862,6 +874,23 @@ End if;
 END */$$
 DELIMITER ;
 
+/*Table structure for table `stored_data` */
+
+DROP TABLE IF EXISTS `stored_data`;
+
+/*!50001 DROP VIEW IF EXISTS `stored_data` */;
+/*!50001 DROP TABLE IF EXISTS `stored_data` */;
+
+/*!50001 CREATE TABLE  `stored_data`(
+ `domain` varchar(40) ,
+ `attribute_name` varchar(40) ,
+ `att_value` longblob ,
+ `data_type` varchar(40) ,
+ `val_mod_dttm` timestamp ,
+ `val_id` bigint(20) unsigned ,
+ `ent_id` bigint(20) unsigned 
+)*/;
+
 /*Table structure for table `v10` */
 
 DROP TABLE IF EXISTS `v10`;
@@ -883,6 +912,13 @@ DROP TABLE IF EXISTS `v10000`;
 /*!50001 CREATE TABLE  `v10000`(
  `n` int(1) 
 )*/;
+
+/*View structure for view stored_data */
+
+/*!50001 DROP TABLE IF EXISTS `stored_data` */;
+/*!50001 DROP VIEW IF EXISTS `stored_data` */;
+
+/*!50001 CREATE ALGORITHM=UNDEFINED DEFINER=`deweyg`@`%` SQL SECURITY DEFINER VIEW `stored_data` AS (select straight_join `D`.`dom_name` AS `domain`,`A`.`att_name` AS `attribute_name`,coalesce(`L`.`lva_value`,`V`.`val_value`) AS `att_value`,coalesce(`Y`.`dty_name`,'???') AS `data_type`,`V`.`val_mod_dttm` AS `val_mod_dttm`,`V`.`val_id` AS `val_id`,`V`.`val_ent_id` AS `ent_id` from (((((`val_value` `V` join `dom_domain` `D` on((`D`.`dom_id` = `V`.`val_dom_id`))) join `att_attribute` `A` on((`A`.`att_id` = `V`.`val_att_id`))) left join `dxa_dom_x_att` `M` on(((`M`.`dxa_dom_id` = `V`.`val_dom_id`) and (`M`.`dxa_att_id` = `V`.`val_att_id`)))) left join `dty_data_type` `Y` on((`Y`.`dty_id` = coalesce(`M`.`dxa_dty_id`,`A`.`att_dty_id`)))) left join `lva_long_value` `L` on(((left(`V`.`val_value`,2) = '-1') and (`L`.`lva_val_id` = `V`.`val_id`)))) order by `V`.`val_ent_id`,`D`.`dom_name`,`A`.`att_name` limit 2000) */;
 
 /*View structure for view v10 */
 
