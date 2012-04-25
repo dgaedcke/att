@@ -1,4 +1,4 @@
-from att import Entity # main module used for the att storage service
+from att import Entity, EntitySearch # main module used for the att storage service
 # to support direct queries for printing results below, load db
 from db import connect, call, sqlExec, sqlFetchAll, sqlFetchRow, sqlFetchValue
 
@@ -62,6 +62,11 @@ print('Everything just stored (assuming you truncated first) is:')
 results = sqlFetchAll('SELECT * FROM stored_data where ent_id = 17;')
 print(results)
 
+userSearchObj = EntitySearch('user', company_id=3)
+
+usersWithTheseAttVals = userSearchObj.fetch('attribute', 'name:dewey gaedcke,age:39,dob:11081963,sex:m,')
+print('usersWithTheseAttVals')
+print(usersWithTheseAttVals)
 
 # to see all the data just stored (assuming you truncated first), run:
 # SELECT STRAIGHT_JOIN

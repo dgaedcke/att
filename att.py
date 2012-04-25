@@ -1,14 +1,14 @@
 # an "entity" is an abstract pointer for a rec of "ety_entity_type"
-	# (cols:  xxx_id, ety_id, encode, com_id)
+# 	(cols:  xxx_id, ety_id, encode, com_id)
 # an "ety_entity_type" represents a table in another schema
-	#  eg  company, user, case, document, author
+# 	 eg  company, user, case, document, author
 # a "dom_domain" is a grouping of related attributes
-	# eg prefs_ui_agent, user_prefs_ui_sup, user_prefs_security
+# 	eg prefs_ui_agent, user_prefs_ui_sup, user_prefs_security
 # "att_attribute" is the name of some stored value (think column name)
-	# eg  age, name, dob, hometown
+# 	eg  age, name, dob, hometown
 # val_values track the actual column vals;  values are stored at the intersection of:
-	#  ent_entity, att_attribute, dom_domain
-	# val_value is the actual value stored for this entity, for this attribute, in this domain
+# 	 ent_entity, att_attribute, dom_domain
+# 	val_value is the actual value stored for this entity, for this attribute, in this domain
 # attributes at SOME domains can be created on the fly by the EAV system
 # a "data_type" is the kind of value stored in an attribute
 
@@ -235,7 +235,21 @@ class Entity(dict): # make it a new style class with base of dictionary
 	def getHistory(self, domain, attribute):
 		pass 
 	
-
+class EntitySearch:
+	'''locates Entities of a certain type who match specific attribute names & values'''
+	def __init__(self, entity_type, company_id):
+		self.type = entity_type
+		self.company_id = company_id
+		
+	def fetch(self, domain_name, att_names_values):
+		# if att_names_values is not formated (ie a dict), i need to make it look like:
+		#  name:dewey gaedcke,age:39,dob:11081963,sex:m,'
+		# CALL searchForEntity('user', 'attribute', 'name:dewey gaedcke,age:39,dob:11081963,sex:m,', 4, 3, 0);
+		value_count = 4
+		
+		ent_list = call('searchForEntity', (self.type, domain_name, att_names_values, value_count, self.company_id, 0))
+		return ent_list # contains list of user ID's who have exact match for att:val in att_names_values
+	
 
 # from att import Entity
 # x = Entity('user', 33, 66)
