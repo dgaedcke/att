@@ -241,10 +241,22 @@ class EntitySearch:
 		self.type = entity_type
 		self.company_id = company_id
 		
+	def strFromParam(att_names_values):
+		'''convert dictionary to string & calc # of search vals'''
+		numSrchVals = 0
+		p2Type = type(att_names_values)
+		if p2Type == DictType:
+			numSrchVals = len(att_names_values)
+			att_names_values = ':'.join(att_names_values)
+		# elif p2Type == StringType:
+		return att_names_values, numSrchVals
+		
 	def fetch(self, domain_name, att_names_values):
 		# if att_names_values is not formated (ie a dict), i need to make it look like:
 		#  name:dewey gaedcke,age:39,dob:11081963,sex:m,'
 		# CALL searchForEntity('user', 'attribute', 'name:dewey gaedcke,age:39,dob:11081963,sex:m,', 4, 3, 0);
+		
+		# att_names_values, value_count = strFromParam(att_names_values)
 		value_count = 4
 		
 		ent_list = call('searchForEntity', (self.type, domain_name, att_names_values, value_count, self.company_id, 0))

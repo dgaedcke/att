@@ -29,7 +29,7 @@ storeDifferentAccessInSepDomain = {'domain': 'privilege', 'value': 'yes_really'}
 
 attsToUpdate = {'name': overrideNameAndKeepOld # remember prior value in history
 			, 'age': {'value': 33}
-			, 'dob': {'value': '1980-04-10'}
+			, 'dob': {'value': '1980-04-10', keepOld:1}
 			, 'access': storeDifferentAccessInSepDomain} # this att stored under "privilege" domain
 			# all others stored under the "attribute" domain
 			
