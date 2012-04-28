@@ -15,32 +15,35 @@ curUser_id = 333
 
 user333Atts = Entity('user', company_id, curUser_id) # new attribute obj for this user
 
-attsToStore = {'name': {'value': 'johnP'}
-			, 'handle': {'value': '@johnParker', 'domain': 'identity'}
+chars500 = 'cd234567yz' * 50
+
+
+attsToStore = {'name': {'value': '22johnP'}
+			, 'handle': {'value': chars500, 'domain': 'identity', 'keepOld':1}
 			, 'age': {'value': 22}
-			, 'access': {'value': 'no_way'}
-			, 'dob': {'value': '1970-01-14'}}
+			, 'access': {'value': '22no_way'}
+			, 'dob': {'value': '1922-01-14'}}
 
 # all (except for "handle") stored in the "attribute" domain
 user333Atts.setAtts('attribute', attsToStore) 
 
-overrideNameAndKeepOld = {'value': 'johnnyP', 'keepOld': 1}
-storeDifferentAccessInSepDomain = {'domain': 'privilege', 'value': 'yes_really'}
+overrideNameAndKeepOld = {'value': '22johnnyP5555', 'keepOld': 1}
+storeDifferentAccessInSepDomain = {'domain': 'privilege', 'value': '22yes_really6666'}
 
 attsToUpdate = {'name': overrideNameAndKeepOld # remember prior value in history
-			, 'age': {'value': 33}
-			, 'dob': {'value': '1980-04-10', keepOld:1}
+			, 'age': {'value': 22}
+			, 'dob': {'value': '2022-05-15', 'keepOld':1}
 			, 'access': storeDifferentAccessInSepDomain} # this att stored under "privilege" domain
 			# all others stored under the "attribute" domain
 			
-user333Atts.setAtts('attribute', attsToUpdate, 0) # 0 means DON'T archive old (keepOld) vals
+user333Atts.setAtts('attribute', attsToUpdate, 1) # 0 means DON'T archive old (keepOld) vals
 # but "name" will be archived because overriden
 # and a sep copy of "access" will be stored in the privilege domain
 
-prefsToStore = {'autoLogoffInterval': {'value': 15}, 'userHandle': {'value': 'IamBob'}, 'buttonColor': {'value': '125-30-255'}}
+prefsToStore = {'autoLogoffInterval': {'value': 33}, 'userHandle': {'value': '22IamBob'}, 'buttonColor': {'value': '225-30-255'}}
 user333Atts.setAtts('preference', prefsToStore)
 
-prefsToUpdate = {'autoLogoffInterval': {'value': 22}, 'userHandle': {'value': 'IamBob222'}, 'listColor': {'value': '100-200-300'}}
+prefsToUpdate = {'autoLogoffInterval': {'value': 22}, 'userHandle': {'value': '22IamBob222'}, 'listColor': {'value': '100-220-300'}}
 user333Atts.setAtts('preference', prefsToUpdate, 1) # 1 means keep/archive old vals
 
 allAttributeVals = user333Atts.getAtts('attribute') # get all atts stored in the "attribute" domain

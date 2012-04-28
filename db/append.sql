@@ -1,12 +1,6 @@
-ALTER TABLE `att`.`ent_entity` DROP KEY `type_rec_id`, ADD UNIQUE `type_rec_id` (`ent_com_id`, `ent_ety_id`, `ent_xxx_id`);
-
 /*!40101 SET NAMES utf8 */;
 
-
-
 /*!40101 SET SQL_MODE=''*/;
-
-
 
 /*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
 
@@ -16,7 +10,9 @@ ALTER TABLE `att`.`ent_entity` DROP KEY `type_rec_id`, ADD UNIQUE `type_rec_id` 
 
 CREATE DATABASE /*!32312 IF NOT EXISTS*/`att` /*!40100 DEFAULT CHARACTER SET utf8 */;
 
+ALTER TABLE `att`.`ent_entity` DROP KEY `type_rec_id`, ADD UNIQUE `type_rec_id` (`ent_com_id`, `ent_ety_id`, `ent_xxx_id`);
 
+ALTER TABLE val_value CHANGE `val_mod_dttm` `val_mod_dttm` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'date time when value last changed';
 
 /* Function  structure for function  `fwwq` */
 
@@ -25,6 +21,15 @@ CREATE DATABASE /*!32312 IF NOT EXISTS*/`att` /*!40100 DEFAULT CHARACTER SET utf
 /*!50003 DROP FUNCTION IF EXISTS `fwwq` */;
 
 DELIMITER $$
+
+
+
+CREATE TABLE `csa_comp_specific_attr` (
+  `csa_com_id` int(10) unsigned NOT NULL,
+  `csa_att_id` smallint(5) unsigned NOT NULL,
+  `csa_encode` tinyint(3) unsigned NOT NULL DEFAULT '0',
+  PRIMARY KEY (`csa_att_id`,`csa_com_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='tracks private company atts'
 
 
 
