@@ -12,6 +12,7 @@
 # attributes at SOME domains can be created on the fly by the EAV system
 # a "data_type" is the kind of value stored in an attribute
 
+import re
 from types import DictType, StringType, ListType, TupleType, BooleanType, FunctionType
 from db import connect, call, sqlExec, sqlFetchAll, sqlFetchRow, sqlFetchValue
 conn, cur = connect();
