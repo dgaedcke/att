@@ -1,5 +1,5 @@
 # from db import connect, call, sqlExec, sqlFetchAll, sqlFetchRow, sqlFetchValue
-
+# import pip
 import MySQLdb, MySQLdb.cursors
 from MySQLdb.constants import FIELD_TYPE
 	# http://www.mikusa.com/python-mysql-docs/docs/MySQLdb.constants.FIELD_TYPE.html
